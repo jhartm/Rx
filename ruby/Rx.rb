@@ -11,7 +11,11 @@ class Rx
     @type_registry = {}
     @prefix = { "" => TAG_CORE, ".meta" => TAG_META }
 
-    Type::Core.core_types.each { |t| register_type(t) } if opt[:load_core]
+    load_core if opt[:load_core]
+  end
+  
+  def load_core
+    Type::Core.core_types.each { |t| register_type(t) }
   end
 
   def register_type(type)
@@ -87,7 +91,7 @@ class Rx
 
         arg.each_pair do |key, value|
           unless ["min", "max", "min-ex", "max-ex"].index(key)
-            raise Rx::Exception.new("illegal argument for Rx::Helper::Range")
+            raise Rx::Exception.new("illegal argument for #{self.class}")
           end
 
           @range[key] = value
@@ -529,7 +533,7 @@ class Rx
 
           if value.length > @content_schemata.length
             unless @tail_schema
-              error("expected tail_schema")
+              error("expected tail schema")
             end
 
             validate(@tail_schema, value[@content_schemata.length, value.length - @content_schemata.length])
