@@ -41,11 +41,11 @@ class Rx
     end
 
     match = name.match(/\A\/(.*?)\/(.+)\z/)
-    if ! match then
+    if !match then
       raise Rx::Exception.new("couldn't understand Rx type name: #{name}")
     end
 
-    if ! @prefix.has_key?(match[1]) then
+    if !@prefix.has_key?(match[1]) then
       raise Rx::Exception.new("unknown prefix '#{match[1]}' in name 'name'")
     end
 
@@ -69,7 +69,7 @@ class Rx
 
     uri = expand_uri(schema['type'])
 
-    if ! @type_registry.has_key?(uri) then
+    if !@type_registry.has_key?(uri) then
       raise Rx::Exception.new('unknown type')
     end
 
@@ -102,10 +102,10 @@ class Rx
     end
 
     def check(value)
-      return false if ! @range['min'   ].nil? and value <  @range['min'   ]
-      return false if ! @range['min-ex'].nil? and value <= @range['min-ex']
-      return false if ! @range['max-ex'].nil? and value >= @range['max-ex']
-      return false if ! @range['max'   ].nil? and value >  @range['max'   ]
+      return false if !@range['min'   ].nil? and value <  @range['min'   ]
+      return false if !@range['min-ex'].nil? and value <= @range['min-ex']
+      return false if !@range['max-ex'].nil? and value >= @range['max-ex']
+      return false if !@range['max'   ].nil? and value >  @range['max'   ]
       return true
     end
   end
@@ -189,7 +189,7 @@ class Rx
         def initialize(param, rx)
           super
 
-          if ! param.has_key?('of') then
+          if !param.has_key?('of') then
             raise Rx::Exception.new("no 'of' parameter provided for #{uri}")
           end
 
@@ -378,7 +378,7 @@ class Rx
         include Type::NoParams
 
         def check!(value)
-          raise ValidationError.new("def failed", "/def") unless ! value.nil?
+          raise ValidationError.new("def failed", "/def") unless !value.nil?
         end
       end
 
@@ -458,7 +458,7 @@ class Rx
           super
 
           if param.has_key?('value') then
-            if ! param['value'].kind_of?(Numeric) then
+            if !param['value'].kind_of?(Numeric) then
               raise Rx::Exception.new("invalid value parameter for #{uri}")
             end
 
@@ -701,7 +701,7 @@ class Rx
           end
 
           if param.has_key?('value') then
-            if ! param['value'].instance_of?(String) then
+            if !param['value'].instance_of?(String) then
               raise Rx::Exception.new("invalid value parameter for #{uri}")
             end
 
