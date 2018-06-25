@@ -87,13 +87,13 @@ class Rx
     def initialize(arg)
       @range = {}
 
-      arg.each_pair { |key,value|
+      arg.each_pair do |key,value|
         unless ['min', 'max', 'min-ex', 'max-ex'].index(key)
           raise Rx::Exception.new("illegal argument for Rx::Helper::Range")
         end
 
         @range[key] = value
-      }
+      end
     end
 
     def check(value)
@@ -142,11 +142,11 @@ class Rx
     end
 
     def assert_valid_params(param)
-      param.each_key { |k|
+      param.each_key do |k|
         unless self.allowed_param?(k)
           raise Rx::Exception.new("unknown parameter #{k} for #{uri}")
         end
-      }
+      end
     end
 
     module NoParams
@@ -161,7 +161,7 @@ class Rx
     class Type::Core < Type
       class << self
         def uri
-          return 'tag:codesimply.com,2008:rx/core/' + subname
+          'tag:codesimply.com,2008:rx/core/' + subname
         end
       end
 
@@ -178,7 +178,7 @@ class Rx
         @@allowed_param = { 'of' => true, 'type' => true }
 
         def allowed_param?(p)
-          return @@allowed_param[p]
+          @@allowed_param[p]
         end
 
         def initialize(param, rx)
@@ -199,7 +199,7 @@ class Rx
 
         class << self
           def subname
-            return 'all'
+            'all'
           end
         end
 
@@ -221,7 +221,7 @@ class Rx
         @@allowed_param = { 'of' => true, 'type' => true }
 
         def allowed_param?(p)
-          return @@allowed_param[p]
+          @@allowed_param[p]
         end
 
         def initialize(param, rx)
@@ -240,7 +240,7 @@ class Rx
 
         class << self
           def subname
-            return 'any'
+            'any'
           end
         end
 
@@ -261,14 +261,14 @@ class Rx
       class Arr < Type::Core
         class << self
           def subname
-            return 'arr'
+            'arr'
           end
         end
 
         @@allowed_param = { 'contents' => true, 'length' => true, 'type' => true }
 
         def allowed_param?(p)
-          return @@allowed_param[p]
+          @@allowed_param[p]
         end
 
         def initialize(param, rx)
@@ -314,7 +314,7 @@ class Rx
       class Bool < Type::Core
         class << self
           def subname
-            return 'bool'
+            'bool'
           end
         end
 
@@ -330,14 +330,14 @@ class Rx
       class Fail < Type::Core
         class << self
           def subname
-            return 'fail'
+            'fail'
           end
         end
 
         include Type::NoParams
 
         def check(value)
-          return false
+          false
         end
 
         def check!(value)
@@ -350,7 +350,7 @@ class Rx
       class Date < Type::Core
         class << self
           def subname
-            return 'date'
+            'date'
           end
         end
 
@@ -366,7 +366,7 @@ class Rx
       class Def < Type::Core
         class << self
           def subname
-            return 'def'
+            'def'
           end
         end
 
@@ -380,14 +380,14 @@ class Rx
       class Map < Type::Core
         class << self
           def subname
-            return 'map'
+            'map'
           end
         end
 
         @@allowed_param = { 'values' => true, 'type' => true }
 
         def allowed_param?(p)
-          return @@allowed_param[p]
+          @@allowed_param[p]
         end
 
         def initialize(param, rx)
@@ -423,7 +423,7 @@ class Rx
       class Nil < Type::Core
         class << self
           def subname
-            return 'nil'
+            'nil'
           end
         end
 
@@ -439,14 +439,14 @@ class Rx
       class Num < Type::Core
         class << self
           def subname
-            return 'num'
+            'num'
           end
         end
 
         @@allowed_param = { 'range' => true, 'type' => true, 'value' => true }
 
         def allowed_param?(p)
-          return @@allowed_param[p]
+          @@allowed_param[p]
         end
 
         def initialize(param, rx)
@@ -485,7 +485,7 @@ class Rx
       class Int < Type::Core::Num
         class << self
           def subname
-            return 'int'
+            'int'
           end
         end
 
@@ -511,7 +511,7 @@ class Rx
       class One < Type::Core
         class << self
           def subname
-            return 'one'
+            'one'
           end
         end
 
@@ -527,7 +527,7 @@ class Rx
       class Rec < Type::Core
         class << self
           def subname
-            return 'rec'
+            'rec'
           end
         end
 
@@ -539,7 +539,7 @@ class Rx
         }
 
         def allowed_param?(p)
-          return @@allowed_param[p]
+          @@allowed_param[p]
         end
 
         def initialize(param, rx)
@@ -549,20 +549,18 @@ class Rx
 
           @rest_schema = rx.make_schema(param['rest']) if param['rest']
 
-          ['optional', 'required'].each { |type|
+          ['optional', 'required'].each do |type|
             next unless param[type]
 
-            param[type].keys.each { |field|
+            param[type].keys.each do |field|
               if @field[field]
                 raise Rx::Exception.new("#{field} in both required and optional")
               end
 
-              @field[field] = {
-                :required => (type == 'required'),
-                :schema   => rx.make_schema(param[type][field]),
-              }
-            }
-          }
+              @field[field] = { :required => (type == 'required'),
+                                :schema   => rx.make_schema(param[type][field]) }
+            end
+          end
         end
 
         def check!(value)
@@ -615,14 +613,14 @@ class Rx
       class Seq < Type::Core
         class << self
           def subname
-            return 'seq'
+            'seq'
           end
         end
 
         @@allowed_param = { 'tail' => true, 'contents' => true, 'type' => true }
 
         def allowed_param?(p)
-          return @@allowed_param[p]
+          @@allowed_param[p]
         end
 
         def initialize(param, rx)
@@ -648,14 +646,14 @@ class Rx
             raise ValidationError.new("expected Array to have at least #{@content_schemata.length} elements, had #{value.length}", "/seq")
           end
 
-          @content_schemata.each_index { |i|
+          @content_schemata.each_index do |i|
             begin
               @content_schemata[i].check!(value[i])
             rescue ValidationError => e
               e.path = "/seq" + e.path
               raise e
             end
-          }
+          end
 
           if value.length > @content_schemata.length
             unless @tail_schema
@@ -680,14 +678,14 @@ class Rx
       class Str < Type::Core
         class << self
           def subname
-            return 'str'
+            'str'
           end
         end
 
         @@allowed_param = { 'type' => true, 'value' => true, 'length' => true }
 
         def allowed_param?(p)
-          return @@allowed_param[p]
+          @@allowed_param[p]
         end
 
         def initialize(param, rx)
@@ -730,7 +728,7 @@ class Rx
       class Time < Type::Core
         class << self
           def subname
-            return 'time'
+            'time'
           end
         end
 
@@ -747,22 +745,22 @@ class Rx
 
       class << self
         def core_types
-          return [Type::Core::All,
-                  Type::Core::Any,
-                  Type::Core::Arr,
-                  Type::Core::Bool,
-                  Type::Core::Date,
-                  Type::Core::Def,
-                  Type::Core::Fail,
-                  Type::Core::Int,
-                  Type::Core::Map,
-                  Type::Core::Nil,
-                  Type::Core::Num,
-                  Type::Core::One,
-                  Type::Core::Rec,
-                  Type::Core::Seq,
-                  Type::Core::Str,
-                  Type::Core::Time]
+          [Type::Core::All,
+           Type::Core::Any,
+           Type::Core::Arr,
+           Type::Core::Bool,
+           Type::Core::Date,
+           Type::Core::Def,
+           Type::Core::Fail,
+           Type::Core::Int,
+           Type::Core::Map,
+           Type::Core::Nil,
+           Type::Core::Num,
+           Type::Core::One,
+           Type::Core::Rec,
+           Type::Core::Seq,
+           Type::Core::Str,
+           Type::Core::Time]
         end
       end
     end
