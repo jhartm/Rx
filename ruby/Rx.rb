@@ -3,12 +3,10 @@ class Rx
     Rx.new(:load_core => true).make_schema(schema)
   end
 
-  def initialize(opt={})
+  def initialize(opt = {})
     @type_registry = {}
-    @prefix = {
-      ''      => 'tag:codesimply.com,2008:rx/core/',
-      '.meta' => 'tag:codesimply.com,2008:rx/meta/',
-    }
+    @prefix = { ''      => 'tag:codesimply.com,2008:rx/core/',
+                '.meta' => 'tag:codesimply.com,2008:rx/meta/' }
 
     if opt[:load_core] then
       Type::Core.core_types.each { |t| register_type(t) }
@@ -19,26 +17,22 @@ class Rx
     uri = type.uri
 
     if @type_registry.has_key?(uri) then
-      raise Rx::Exception.new(
-        "attempted to register already-known type #{uri}"
-      )
+      raise Rx::Exception.new("attempted to register already-known type #{uri}")
     end
 
-    @type_registry[ uri ] = type
+    @type_registry[uri] = type
   end
 
   def learn_type(uri, schema)
     if @type_registry.has_key?(uri) then
-      raise Rx::Exception.new(
-        "attempted to learn type for already-registered uri #{uri}"
-      )
+      raise Rx::Exception.new("attempted to learn type for already-registered uri #{uri}")
     end
 
     # make sure schema is valid
     # should this be in a begin/rescue?
     make_schema(schema)
 
-    @type_registry[ uri ] = { 'schema' => schema }
+    @type_registry[uri] = { 'schema' => schema }
   end
 
   def expand_uri(name)
@@ -55,7 +49,7 @@ class Rx
       raise Rx::Exception.new("unknown prefix '#{match[1]}' in name 'name'")
     end
 
-    return @prefix[ match[1] ] + match[2]
+    return @prefix[match[1]] + match[2]
   end
 
   def add_prefix(name, base)
@@ -82,7 +76,7 @@ class Rx
     type_class = @type_registry[uri]
 
     if type_class.instance_of?(Hash) then
-      if schema.keys != [ 'type' ] then
+      if schema.keys != ['type'] then
         raise Rx::Exception.new('composed type does not take check arguments')
       end
       return make_schema(type_class['schema'])
@@ -96,14 +90,14 @@ class Rx
   class Helper::Range
 
     def initialize(arg)
-      @range = { }
+      @range = {}
 
       arg.each_pair { |key,value|
         if not ['min', 'max', 'min-ex', 'max-ex'].index(key) then
           raise Rx::Exception.new("illegal argument for Rx::Helper::Range")
         end
 
-        @range[ key ] = value
+        @range[key] = value
       }
     end
 
@@ -163,7 +157,7 @@ class Rx
     module NoParams
       def initialize(param, rx)
         return if param.keys.length == 0
-        return if param.keys == [ 'type' ]
+        return if param.keys == ['type']
 
         raise Rx::Exception.new('this type is not parameterized')
       end
@@ -203,7 +197,7 @@ class Rx
             raise Rx::Exception.new("no schemata provided for 'of' in #{uri}")
           end
 
-          @alts = [ ]
+          @alts = []
           param['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
         end
 
@@ -238,12 +232,10 @@ class Rx
 
           if param['of'] then
             if param['of'].length == 0 then
-              raise Rx::Exception.new(
-                                      "no alternatives provided for 'of' in #{uri}"
-                                      )
+              raise Rx::Exception.new("no alternatives provided for 'of' in #{uri}")
             end
 
-            @alts = [ ]
+            @alts = []
             param['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
           end
         end
@@ -288,10 +280,10 @@ class Rx
             raise Rx::Exception.new("no contents schema given for #{uri}")
           end
 
-          @contents_schema = rx.make_schema( param['contents'] )
+          @contents_schema = rx.make_schema(param['contents'])
 
           if param['length'] then
-            @length_range = Rx::Helper::Range.new( param['length'] )
+            @length_range = Rx::Helper::Range.new(param['length'])
           end
         end
 
@@ -474,7 +466,7 @@ class Rx
           end
 
           if param['range'] then
-            @value_range = Rx::Helper::Range.new( param['range'] )
+            @value_range = Rx::Helper::Range.new(param['range'])
           end
         end
 
@@ -529,7 +521,7 @@ class Rx
         include Type::NoParams
 
         def check!(value)
-          unless [ Numeric, String, TrueClass, FalseClass ].any? { |cls| value.kind_of?(cls) }
+          unless [Numeric, String, TrueClass, FalseClass].any? { |cls| value.kind_of?(cls) }
             raise ValidationError.new("expected One got #{value.inspect}", "/one")
           end
         end
@@ -556,12 +548,13 @@ class Rx
         def initialize(param, rx)
           super
 
-          @field = { }
+          @field = {}
 
           @rest_schema = rx.make_schema(param['rest']) if param['rest']
 
-          [ 'optional', 'required' ].each { |type|
+          ['optional', 'required'].each { |type|
             next unless param[type]
+
             param[type].keys.each { |field|
               if @field[field] then
                 raise Rx::Exception.new("#{field} in both required and optional")
@@ -580,7 +573,7 @@ class Rx
             raise ValidationError.new("expected Hash got #{value.class}", "/rec")
           end
 
-          rest = [ ]
+          rest = []
 
           value.each do |field, field_value|
             unless @field[field] then
@@ -607,7 +600,7 @@ class Rx
               raise ValidationError.new("Hash had extra keys: #{rest.inspect}", "/rec")
             end
 
-            rest_hash = { }
+            rest_hash = {}
             rest.each { |field| rest_hash[field] = value[field] }
 
             begin
@@ -704,7 +697,7 @@ class Rx
           super
 
           if param['length'] then
-            @length_range = Rx::Helper::Range.new( param['length'] )
+            @length_range = Rx::Helper::Range.new(param['length'])
           end
 
           if param.has_key?('value') then
