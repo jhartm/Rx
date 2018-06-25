@@ -63,7 +63,7 @@ class Rx
   def make_schema(schema)
     schema = { 'type' => schema } if schema.instance_of?(String)
 
-    if not (schema.instance_of?(Hash) and schema['type']) then
+    if !(schema.instance_of?(Hash) && schema['type']) then
       raise Rx::Exception.new('invalid type')
     end
 
@@ -93,7 +93,7 @@ class Rx
       @range = {}
 
       arg.each_pair { |key,value|
-        if not ['min', 'max', 'min-ex', 'max-ex'].index(key) then
+        if !['min', 'max', 'min-ex', 'max-ex'].index(key) then
           raise Rx::Exception.new("illegal argument for Rx::Helper::Range")
         end
 
@@ -102,10 +102,10 @@ class Rx
     end
 
     def check(value)
-      return false if !@range['min'   ].nil? and value <  @range['min'   ]
-      return false if !@range['min-ex'].nil? and value <= @range['min-ex']
-      return false if !@range['max-ex'].nil? and value >= @range['max-ex']
-      return false if !@range['max'   ].nil? and value >  @range['max'   ]
+      return false if !@range['min'   ].nil? && value <  @range['min'   ]
+      return false if !@range['min-ex'].nil? && value <= @range['min-ex']
+      return false if !@range['max-ex'].nil? && value >= @range['max-ex']
+      return false if !@range['max'   ].nil? && value >  @range['max'   ]
       return true
     end
   end
@@ -323,7 +323,7 @@ class Rx
         include Type::NoParams
 
         def check!(value)
-          unless value.instance_of?(TrueClass) or value.instance_of?(FalseClass)
+          unless value.instance_of?(TrueClass) || value.instance_of?(FalseClass)
             raise ValidationError.new("expected bool got #{value.inspect}", "/bool")
           end
           true
@@ -406,7 +406,7 @@ class Rx
         end
 
         def check!(value)
-          unless value.instance_of?(Hash) or value.class.to_s == "HashWithIndifferentAccess"
+          unless value.instance_of?(Hash) || value.class.to_s == "HashWithIndifferentAccess"
             raise ValidationError.new("expected map got #{value.inspect}", "/map")
           end
 
@@ -471,15 +471,15 @@ class Rx
         end
 
         def check!(value)
-          if not value.kind_of?(Numeric)
+          if !value.kind_of?(Numeric)
             raise ValidationError.new("expected Numeric got #{value.inspect}", "/#{self.class.subname}")
           end
 
-          if @value_range and not @value_range.check(value)
+          if @value_range && !@value_range.check(value)
             raise ValidationError.new("expected Numeric in range #{@value_range} got #{value.inspect}", "/#{self.class.subname}")
           end
 
-          if @value and value != @value
+          if @value && value != @value
             raise ValidationError.new("expected Numeric to equal #{@value} got #{value.inspect}", "/#{self.class.subname}")
           end
 
@@ -497,7 +497,7 @@ class Rx
         def initialize(param, rx)
           super
 
-          if @value and @value % 1 != 0 then
+          if @value && @value % 1 != 0 then
             raise Rx::Exception.new("invalid value parameter for #{uri}")
           end
         end
@@ -569,7 +569,7 @@ class Rx
         end
 
         def check!(value)
-          unless value.instance_of?(Hash) or value.class.to_s == "HashWithIndifferentAccess"
+          unless value.instance_of?(Hash) || value.class.to_s == "HashWithIndifferentAccess"
             raise ValidationError.new("expected Hash got #{value.class}", "/rec")
           end
 
@@ -631,7 +631,7 @@ class Rx
         def initialize(param, rx)
           super
 
-          unless param['contents'] and param['contents'].kind_of?(Array) then
+          unless param['contents'] && param['contents'].kind_of?(Array) then
             raise Rx::Exception.new("missing or invalid contents for #{uri}")
           end
 
@@ -720,7 +720,7 @@ class Rx
             end
           end
 
-          if @value and value != @value
+          if @value && value != @value
             raise ValidationError.new("expected #{@value.inspect} got #{value.inspect}", "/str")
           end
 
