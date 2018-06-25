@@ -129,6 +129,16 @@ class Rx
   end
 
   class Type
+    class << self
+      def subname
+        self.name.split("::").last.downcase
+      end
+
+      def uri
+        'tag:codesimply.com,2008:rx/core/' + subname
+      end
+    end
+
     def initialize(param, rx)
       assert_valid_params(param)
     end
@@ -155,12 +165,6 @@ class Rx
     end
 
     class Core < Type
-      class << self
-        def uri
-          'tag:codesimply.com,2008:rx/core/' + subname
-        end
-      end
-
       def check(value)
         begin
           check!(value)
@@ -192,12 +196,6 @@ class Rx
           @alts = []
 
           param['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
-        end
-
-        class << self
-          def subname
-            'all'
-          end
         end
 
         def check!(value)
@@ -235,12 +233,6 @@ class Rx
           end
         end
 
-        class << self
-          def subname
-            'any'
-          end
-        end
-
         def check!(value)
           return true unless @alts
 
@@ -256,12 +248,6 @@ class Rx
       end
 
       class Arr < Core
-        class << self
-          def subname
-            'arr'
-          end
-        end
-
         @@allowed_param = { 'contents' => true, 'length' => true, 'type' => true }
 
         def allowed_param?(p)
@@ -309,12 +295,6 @@ class Rx
       end
 
       class Bool < Core
-        class << self
-          def subname
-            'bool'
-          end
-        end
-
         include NoParams
 
         def check!(value)
@@ -325,12 +305,6 @@ class Rx
       end
 
       class Fail < Core
-        class << self
-          def subname
-            'fail'
-          end
-        end
-
         include NoParams
 
         def check(value)
@@ -345,12 +319,6 @@ class Rx
       #
       # Added by dan - 81030
       class Date < Core
-        class << self
-          def subname
-            'date'
-          end
-        end
-
         include NoParams
 
         def check!(value)
@@ -361,12 +329,6 @@ class Rx
       end
 
       class Def < Core
-        class << self
-          def subname
-            'def'
-          end
-        end
-
         include NoParams
 
         def check!(value)
@@ -375,12 +337,6 @@ class Rx
       end
 
       class Map < Core
-        class << self
-          def subname
-            'map'
-          end
-        end
-
         @@allowed_param = { 'values' => true, 'type' => true }
 
         def allowed_param?(p)
@@ -418,12 +374,6 @@ class Rx
       end
 
       class Nil < Core
-        class << self
-          def subname
-            'nil'
-          end
-        end
-
         include NoParams
 
         def check!(value)
@@ -434,12 +384,6 @@ class Rx
       end
 
       class Num < Core
-        class << self
-          def subname
-            'num'
-          end
-        end
-
         @@allowed_param = { 'range' => true, 'type' => true, 'value' => true }
 
         def allowed_param?(p)
@@ -480,12 +424,6 @@ class Rx
       end
 
       class Int < Num
-        class << self
-          def subname
-            'int'
-          end
-        end
-
         def initialize(param, rx)
           super
 
@@ -506,12 +444,6 @@ class Rx
       end
 
       class One < Core
-        class << self
-          def subname
-            'one'
-          end
-        end
-
         include NoParams
 
         def check!(value)
@@ -522,12 +454,6 @@ class Rx
       end
 
       class Rec < Core
-        class << self
-          def subname
-            'rec'
-          end
-        end
-
         @@allowed_param = {
           'type' => true,
           'rest' => true,
@@ -608,12 +534,6 @@ class Rx
       end
 
       class Seq < Core
-        class << self
-          def subname
-            'seq'
-          end
-        end
-
         @@allowed_param = { 'tail' => true, 'contents' => true, 'type' => true }
 
         def allowed_param?(p)
@@ -673,12 +593,6 @@ class Rx
       end
 
       class Str < Core
-        class << self
-          def subname
-            'str'
-          end
-        end
-
         @@allowed_param = { 'type' => true, 'value' => true, 'length' => true }
 
         def allowed_param?(p)
@@ -723,12 +637,6 @@ class Rx
       #
       # Added by dan - 81106
       class Time < Core
-        class << self
-          def subname
-            'time'
-          end
-        end
-
         include NoParams
 
         def check!(value)
