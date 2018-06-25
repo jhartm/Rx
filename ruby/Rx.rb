@@ -1,6 +1,6 @@
 class Rx
   def self.schema(schema)
-    Rx.new(:load_core => true).make_schema(schema)
+    Rx.new(load_core: true).make_schema(schema)
   end
 
   def initialize(opt = {})
@@ -8,9 +8,9 @@ class Rx
     @prefix = { ''      => 'tag:codesimply.com,2008:rx/core/',
                 '.meta' => 'tag:codesimply.com,2008:rx/meta/' }
 
-    if opt[:load_core]
-      Type::Core.core_types.each { |t| register_type(t) }
-    end
+    return unless opt[:load_core]
+
+    Type::Core.core_types.each { |t| register_type(t) }
   end
 
   def register_type(type)
@@ -62,7 +62,7 @@ class Rx
   def make_schema(schema)
     schema = { 'type' => schema } if schema.instance_of?(String)
 
-    unless (schema.instance_of?(Hash) && schema['type'])
+    unless schema.instance_of?(Hash) && schema['type']
       raise Rx::Exception.new('invalid type')
     end
 
@@ -81,27 +81,27 @@ class Rx
     raise Rx::Exception.new('composed type does not take check arguments')
   end
 
-  Helper = Class.new
+  class Helper
+    class Range
+      def initialize(arg)
+        @range = {}
 
-  class Helper::Range
-    def initialize(arg)
-      @range = {}
+        arg.each_pair do |key, value|
+          unless ['min', 'max', 'min-ex', 'max-ex'].index(key)
+            raise Rx::Exception.new('illegal argument for Rx::Helper::Range')
+          end
 
-      arg.each_pair do |key,value|
-        unless ['min', 'max', 'min-ex', 'max-ex'].index(key)
-          raise Rx::Exception.new("illegal argument for Rx::Helper::Range")
+          @range[key] = value
         end
-
-        @range[key] = value
       end
-    end
 
-    def check(value)
-      return false unless @range['min'].nil? || value >= @range['min'   ]
-      return false unless @range['min-ex'].nil? || value > @range['min-ex']
-      return false unless @range['max-ex'].nil? || value < @range['max-ex']
-      return false unless @range['max'].nil? || value <=  @range['max'   ]
-      return true
+      def check(value)
+        return false unless @range['min'].nil? || value >= @range['min']
+        return false unless @range['min-ex'].nil? || value > @range['min-ex']
+        return false unless @range['max-ex'].nil? || value < @range['max-ex']
+        return false unless @range['max'].nil? || value <= @range['max']
+        return true
+      end
     end
   end
 
@@ -113,10 +113,6 @@ class Rx
     def initialize(message, path)
       @message = message
       @path = path
-    end
-
-    def path
-      @path ||= ""
     end
 
     def message
@@ -142,23 +138,23 @@ class Rx
     end
 
     def assert_valid_params(param)
-      param.each_key do |k|
-        unless self.allowed_param?(k)
-          raise Rx::Exception.new("unknown parameter #{k} for #{uri}")
+      param.each_key do |key|
+        unless allowed_param?(key)
+          raise Rx::Exception.new("unknown parameter #{key} for #{uri}")
         end
       end
     end
 
     module NoParams
       def initialize(param, rx)
-        return if param.keys.length == 0
+        return if param.keys.empty?
         return if param.keys == ['type']
 
         raise Rx::Exception.new('this type is not parameterized')
       end
     end
 
-    class Type::Core < Type
+    class Core < Type
       class << self
         def uri
           'tag:codesimply.com,2008:rx/core/' + subname
@@ -168,13 +164,14 @@ class Rx
       def check(value)
         begin
           check!(value)
+
           true
         rescue ValidationError
           false
         end
       end
 
-      class All < Type::Core
+      class All < Core
         @@allowed_param = { 'of' => true, 'type' => true }
 
         def allowed_param?(p)
@@ -217,7 +214,7 @@ class Rx
         end
       end
 
-      class Any < Type::Core
+      class Any < Core
         @@allowed_param = { 'of' => true, 'type' => true }
 
         def allowed_param?(p)
@@ -258,7 +255,7 @@ class Rx
         end
       end
 
-      class Arr < Type::Core
+      class Arr < Core
         class << self
           def subname
             'arr'
@@ -311,14 +308,14 @@ class Rx
         end
       end
 
-      class Bool < Type::Core
+      class Bool < Core
         class << self
           def subname
             'bool'
           end
         end
 
-        include Type::NoParams
+        include NoParams
 
         def check!(value)
           return true if [TrueClass, FalseClass].include?(value.class)
@@ -327,14 +324,14 @@ class Rx
         end
       end
 
-      class Fail < Type::Core
+      class Fail < Core
         class << self
           def subname
             'fail'
           end
         end
 
-        include Type::NoParams
+        include NoParams
 
         def check(value)
           false
@@ -347,14 +344,14 @@ class Rx
 
       #
       # Added by dan - 81030
-      class Date < Type::Core
+      class Date < Core
         class << self
           def subname
             'date'
           end
         end
 
-        include Type::NoParams
+        include NoParams
 
         def check!(value)
           return true if value.instance_of?(::Date)
@@ -363,21 +360,21 @@ class Rx
         end
       end
 
-      class Def < Type::Core
+      class Def < Core
         class << self
           def subname
             'def'
           end
         end
 
-        include Type::NoParams
+        include NoParams
 
         def check!(value)
           raise ValidationError.new("def failed", "/def") if value.nil?
         end
       end
 
-      class Map < Type::Core
+      class Map < Core
         class << self
           def subname
             'map'
@@ -420,14 +417,14 @@ class Rx
         end
       end
 
-      class Nil < Type::Core
+      class Nil < Core
         class << self
           def subname
             'nil'
           end
         end
 
-        include Type::NoParams
+        include NoParams
 
         def check!(value)
           return true if value.nil?
@@ -436,7 +433,7 @@ class Rx
         end
       end
 
-      class Num < Type::Core
+      class Num < Core
         class << self
           def subname
             'num'
@@ -482,7 +479,7 @@ class Rx
         end
       end
 
-      class Int < Type::Core::Num
+      class Int < Num
         class << self
           def subname
             'int'
@@ -508,14 +505,14 @@ class Rx
         end
       end
 
-      class One < Type::Core
+      class One < Core
         class << self
           def subname
             'one'
           end
         end
 
-        include Type::NoParams
+        include NoParams
 
         def check!(value)
           unless [Numeric, String, TrueClass, FalseClass].any? { |cls| value.kind_of?(cls) }
@@ -524,7 +521,7 @@ class Rx
         end
       end
 
-      class Rec < Type::Core
+      class Rec < Core
         class << self
           def subname
             'rec'
@@ -610,7 +607,7 @@ class Rx
         end
       end
 
-      class Seq < Type::Core
+      class Seq < Core
         class << self
           def subname
             'seq'
@@ -675,7 +672,7 @@ class Rx
         end
       end
 
-      class Str < Type::Core
+      class Str < Core
         class << self
           def subname
             'str'
@@ -725,14 +722,14 @@ class Rx
 
       #
       # Added by dan - 81106
-      class Time < Type::Core
+      class Time < Core
         class << self
           def subname
             'time'
           end
         end
 
-        include Type::NoParams
+        include NoParams
 
         def check!(value)
           unless value.instance_of?(::Time)
@@ -745,22 +742,22 @@ class Rx
 
       class << self
         def core_types
-          [Type::Core::All,
-           Type::Core::Any,
-           Type::Core::Arr,
-           Type::Core::Bool,
-           Type::Core::Date,
-           Type::Core::Def,
-           Type::Core::Fail,
-           Type::Core::Int,
-           Type::Core::Map,
-           Type::Core::Nil,
-           Type::Core::Num,
-           Type::Core::One,
-           Type::Core::Rec,
-           Type::Core::Seq,
-           Type::Core::Str,
-           Type::Core::Time]
+          [All,
+           Any,
+           Arr,
+           Bool,
+           Date,
+           Def,
+           Fail,
+           Int,
+           Map,
+           Nil,
+           Num,
+           One,
+           Rec,
+           Seq,
+           Str,
+           Time]
         end
       end
     end
