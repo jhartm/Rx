@@ -1,4 +1,3 @@
-
 class Rx
   def self.schema(schema)
     Rx.new(:load_core => true).make_schema(schema)
@@ -43,7 +42,9 @@ class Rx
   end
 
   def expand_uri(name)
-    if name.match(/\A\w+:/) then; return name; end;
+    if name.match(/\A\w+:/) then
+      return name
+    end
 
     match = name.match(/\A\/(.*?)\/(.+)\z/)
     if ! match then
@@ -90,7 +91,8 @@ class Rx
     end
   end
 
-  class Helper; end;
+  Helper = Class.new
+
   class Helper::Range
 
     def initialize(arg)
@@ -114,8 +116,7 @@ class Rx
     end
   end
 
-  class Exception < StandardError
-  end
+  Exception = Class.new(StandardError)
 
   class ValidationError < StandardError
     attr_accessor :path
@@ -147,7 +148,9 @@ class Rx
       assert_valid_params(param)
     end
 
-    def uri; self.class.uri; end
+    def uri
+      self.class.uri
+    end
 
     def assert_valid_params(param)
       param.each_key { |k|
@@ -184,7 +187,10 @@ class Rx
 
       class All < Type::Core
         @@allowed_param = { 'of' => true, 'type' => true }
-        def allowed_param?(p); return @@allowed_param[p]; end
+
+        def allowed_param?(p)
+          return @@allowed_param[p]
+        end
 
         def initialize(param, rx)
           super
@@ -201,7 +207,11 @@ class Rx
           param['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
         end
 
-        class << self; def subname; return 'all'; end; end
+        class << self
+          def subname
+            return 'all'
+          end
+        end
 
         def check!(value)
           @alts.each do |alt|
@@ -218,7 +228,10 @@ class Rx
 
       class Any < Type::Core
         @@allowed_param = { 'of' => true, 'type' => true }
-        def allowed_param?(p); return @@allowed_param[p]; end
+
+        def allowed_param?(p)
+          return @@allowed_param[p]
+        end
 
         def initialize(param, rx)
           super
@@ -235,7 +248,11 @@ class Rx
           end
         end
 
-        class << self; def subname; return 'any'; end; end
+        class << self
+          def subname
+            return 'any'
+          end
+        end
 
         def check!(value)
           return true unless @alts
@@ -252,10 +269,17 @@ class Rx
       end
 
       class Arr < Type::Core
-        class << self; def subname; return 'arr'; end; end
+        class << self
+          def subname
+            return 'arr'
+          end
+        end
 
         @@allowed_param = { 'contents' => true, 'length' => true, 'type' => true }
-        def allowed_param?(p); return @@allowed_param[p]; end
+
+        def allowed_param?(p)
+          return @@allowed_param[p]
+        end
 
         def initialize(param, rx)
           super
@@ -298,7 +322,11 @@ class Rx
       end
 
       class Bool < Type::Core
-        class << self; def subname; return 'bool'; end; end
+        class << self
+          def subname
+            return 'bool'
+          end
+        end
 
         include Type::NoParams
 
@@ -311,16 +339,31 @@ class Rx
       end
 
       class Fail < Type::Core
-        class << self; def subname; return 'fail'; end; end
+        class << self
+          def subname
+            return 'fail'
+          end
+        end
+
         include Type::NoParams
-        def check(value); return false; end
-        def check!(value); raise ValidationError.new("explicit fail", "/fail"); end
+
+        def check(value)
+          return false
+        end
+
+        def check!(value)
+          raise ValidationError.new("explicit fail", "/fail")
+        end
       end
 
       #
       # Added by dan - 81030
       class Date < Type::Core
-        class << self; def subname; return 'date'; end; end
+        class << self
+          def subname
+            return 'date'
+          end
+        end
 
         include Type::NoParams
 
@@ -328,20 +371,37 @@ class Rx
           unless value.instance_of?(::Date)
             raise ValidationError("expected Date got #{value.inspect}", "/date")
           end
+
           true
         end
       end
 
       class Def < Type::Core
-        class << self; def subname; return 'def'; end; end
+        class << self
+          def subname
+            return 'def'
+          end
+        end
+
         include Type::NoParams
-        def check!(value); raise ValidationError.new("def failed", "/def") unless ! value.nil?; end
+
+        def check!(value)
+          raise ValidationError.new("def failed", "/def") unless ! value.nil?
+        end
       end
 
       class Map < Type::Core
-        class << self; def subname; return 'map'; end; end
+        class << self
+          def subname
+            return 'map'
+          end
+        end
+
         @@allowed_param = { 'values' => true, 'type' => true }
-        def allowed_param?(p); return @@allowed_param[p]; end
+
+        def allowed_param?(p)
+          return @@allowed_param[p]
+        end
 
         def initialize(param, rx)
           super
@@ -374,15 +434,33 @@ class Rx
       end
 
       class Nil < Type::Core
-        class << self; def subname; return 'nil'; end; end
+        class << self
+          def subname
+            return 'nil'
+          end
+        end
+
         include Type::NoParams
-        def check!(value); raise ValidationError.new("expected nil got #{value.inspect}", "/nil") unless value.nil?; true; end
+
+        def check!(value)
+          raise ValidationError.new("expected nil got #{value.inspect}", "/nil") unless value.nil?
+
+          true
+        end
       end
 
       class Num < Type::Core
-        class << self; def subname; return 'num'; end; end
+        class << self
+          def subname
+            return 'num'
+          end
+        end
+
         @@allowed_param = { 'range' => true, 'type' => true, 'value' => true }
-        def allowed_param?(p); return @@allowed_param[p]; end
+
+        def allowed_param?(p)
+          return @@allowed_param[p]
+        end
 
         def initialize(param, rx)
           super
@@ -404,18 +482,25 @@ class Rx
           if not value.kind_of?(Numeric)
             raise ValidationError.new("expected Numeric got #{value.inspect}", "/#{self.class.subname}")
           end
+
           if @value_range and not @value_range.check(value)
             raise ValidationError.new("expected Numeric in range #{@value_range} got #{value.inspect}", "/#{self.class.subname}")
           end
+
           if @value and value != @value
             raise ValidationError.new("expected Numeric to equal #{@value} got #{value.inspect}", "/#{self.class.subname}")
           end
+
           true
         end
       end
 
       class Int < Type::Core::Num
-        class << self; def subname; return 'int'; end; end
+        class << self
+          def subname
+            return 'int'
+          end
+        end
 
         def initialize(param, rx)
           super
@@ -435,7 +520,12 @@ class Rx
       end
 
       class One < Type::Core
-        class << self; def subname; return 'one'; end; end
+        class << self
+          def subname
+            return 'one'
+          end
+        end
+
         include Type::NoParams
 
         def check!(value)
@@ -446,7 +536,12 @@ class Rx
       end
 
       class Rec < Type::Core
-        class << self; def subname; return 'rec'; end; end
+        class << self
+          def subname
+            return 'rec'
+          end
+        end
+
         @@allowed_param = {
           'type' => true,
           'rest' => true,
@@ -454,7 +549,9 @@ class Rx
           'optional' => true,
         }
 
-        def allowed_param?(p); return @@allowed_param[p]; end
+        def allowed_param?(p)
+          return @@allowed_param[p]
+        end
 
         def initialize(param, rx)
           super
@@ -509,8 +606,10 @@ class Rx
             unless @rest_schema
               raise ValidationError.new("Hash had extra keys: #{rest.inspect}", "/rec")
             end
+
             rest_hash = { }
             rest.each { |field| rest_hash[field] = value[field] }
+
             begin
               @rest_schema.check!(rest_hash)
             rescue ValidationError => e
@@ -524,9 +623,17 @@ class Rx
       end
 
       class Seq < Type::Core
-        class << self; def subname; return 'seq'; end; end
+        class << self
+          def subname
+            return 'seq'
+          end
+        end
+
         @@allowed_param = { 'tail' => true, 'contents' => true, 'type' => true }
-        def allowed_param?(p); return @@allowed_param[p]; end
+
+        def allowed_param?(p)
+          return @@allowed_param[p]
+        end
 
         def initialize(param, rx)
           super
@@ -546,9 +653,11 @@ class Rx
           unless value.instance_of?(Array)
             raise ValidationError.new("expected Array got #{value.inspect}", "/seq")
           end
+
           if value.length < @content_schemata.length
             raise ValidationError.new("expected Array to have at least #{@content_schemata.length} elements, had #{value.length}", "/seq")
           end
+
           @content_schemata.each_index { |i|
             begin
               @content_schemata[i].check!(value[i])
@@ -562,6 +671,7 @@ class Rx
             unless @tail_schema
               raise ValidationError.new("expected tail_schema", "/seq")
             end
+
             begin
               @tail_schema.check!(value[
                                         @content_schemata.length,
@@ -578,9 +688,17 @@ class Rx
       end
 
       class Str < Type::Core
-        class << self; def subname; return 'str'; end; end
+        class << self
+          def subname
+            return 'str'
+          end
+        end
+
         @@allowed_param = { 'type' => true, 'value' => true, 'length' => true }
-        def allowed_param?(p); return @@allowed_param[p]; end
+
+        def allowed_param?(p)
+          return @@allowed_param[p]
+        end
 
         def initialize(param, rx)
           super
@@ -612,6 +730,7 @@ class Rx
           if @value and value != @value
             raise ValidationError.new("expected #{@value.inspect} got #{value.inspect}", "/str")
           end
+
           return true
         end
       end
@@ -619,7 +738,11 @@ class Rx
       #
       # Added by dan - 81106
       class Time < Type::Core
-        class << self; def subname; return 'time'; end; end
+        class << self
+          def subname
+            return 'time'
+          end
+        end
 
         include Type::NoParams
 
@@ -627,6 +750,7 @@ class Rx
           unless value.instance_of?(::Time)
             raise ValidationError.new("expected Time got #{value.inspect}", "/time")
           end
+
           true
         end
       end
