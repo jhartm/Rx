@@ -1,12 +1,15 @@
 class Rx
+  TAG_BASE = 'tag:codesimply.com,2008:rx/'
+  TAG_CORE = File.join(TAG_BASE, 'core/')
+  TAG_META = File.join(TAG_BASE, 'meta/')
+
   def self.schema(schema)
     Rx.new(load_core: true).make_schema(schema)
   end
 
   def initialize(opt = {})
     @type_registry = {}
-    @prefix = { ''      => 'tag:codesimply.com,2008:rx/core/',
-                '.meta' => 'tag:codesimply.com,2008:rx/meta/' }
+    @prefix = { '' => TAG_CORE, '.meta' => TAG_META }
 
     return unless opt[:load_core]
 
@@ -136,7 +139,7 @@ class Rx
       end
 
       def uri
-        File.join('tag:codesimply.com,2008:rx/core/', subname)
+        File.join(TAG_CORE, subname)
       end
     end
 
@@ -160,6 +163,10 @@ class Rx
           raise Rx::Exception.new("unknown parameter #{key} for #{uri}")
         end
       end
+    end
+
+    def error(msg, path = subname)
+      raise ValidationError.new(msg, path)
     end
 
     class Core < Type
@@ -233,7 +240,7 @@ class Rx
             end
           end
 
-          raise ValidationError.new("expected one to match", subname)
+          error("expected one to match")
         end
       end
 
@@ -256,12 +263,12 @@ class Rx
 
         def check!(value)
           unless value.is_a?(Array)
-            raise ValidationError.new("expected array got #{value.class}", subname)
+            error("expected array got #{value.class}")
           end
 
           if @length_range
             unless @length_range.check(value.length)
-              raise ValidationError.new("expected array with #{@length_range} elements, got #{value.length}", subname)
+              error("expected array with #{@length_range} elements, got #{value.length}")
             end
           end
 
@@ -288,7 +295,7 @@ class Rx
         def check!(value)
           return true if [TrueClass, FalseClass].include?(value.class)
 
-          raise ValidationError.new("expected bool got #{value.inspect}", subname)
+          error("expected bool got #{value.inspect}")
         end
       end
 
@@ -302,7 +309,7 @@ class Rx
         end
 
         def check!(value)
-          raise ValidationError.new("explicit fail", subname)
+          error("explicit fail")
         end
       end
 
@@ -316,7 +323,7 @@ class Rx
         def check!(value)
           return true if value.instance_of?(::Date)
 
-          raise ValidationError("expected Date got #{value.inspect}", subname)
+          error("expected Date got #{value.inspect}")
         end
       end
 
@@ -326,7 +333,7 @@ class Rx
         end
 
         def check!(value)
-          raise ValidationError.new("def failed", subname) if value.nil?
+          error("def failed") if value.nil?
         end
       end
 
@@ -345,7 +352,7 @@ class Rx
 
         def check!(value)
           unless value.instance_of?(Hash) || value.class.to_s == "HashWithIndifferentAccess"
-            raise ValidationError.new("expected map got #{value.inspect}", subname)
+            error("expected map got #{value.inspect}")
           end
 
           if @value_schema
@@ -371,7 +378,7 @@ class Rx
         def check!(value)
           return true if value.nil?
 
-          raise ValidationError.new("expected nil got #{value.inspect}", subname)
+          error("expected nil got #{value.inspect}")
         end
       end
 
@@ -396,15 +403,15 @@ class Rx
 
         def check!(value)
           unless value.is_a?(Numeric)
-            raise ValidationError.new("expected Numeric got #{value.inspect}", subname)
+            error("expected Numeric got #{value.inspect}")
           end
 
           if @value_range && !@value_range.check(value)
-            raise ValidationError.new("expected Numeric in range #{@value_range} got #{value.inspect}", subname)
+            error("expected Numeric in range #{@value_range} got #{value.inspect}")
           end
 
           if @value && value != @value
-            raise ValidationError.new("expected Numeric to equal #{@value} got #{value.inspect}", subname)
+            error("expected Numeric to equal #{@value} got #{value.inspect}")
           end
 
           true
@@ -424,7 +431,7 @@ class Rx
           super
 
           unless value.is_a?(Integer)
-            raise ValidationError.new("expected Integer got #{value.inspect}", subname)
+            error("expected Integer got #{value.inspect}")
           end
 
           return true
@@ -439,7 +446,7 @@ class Rx
         def check!(value)
           return true if [Numeric, String, TrueClass, FalseClass].any? { |cls| value.is_a?(cls) }
 
-          raise ValidationError.new("expected One got #{value.inspect}", subname)
+          error("expected One got #{value.inspect}")
         end
       end
 
@@ -469,7 +476,7 @@ class Rx
 
         def check!(value)
           unless value.instance_of?(Hash) || value.class.to_s == "HashWithIndifferentAccess"
-            raise ValidationError.new("expected Hash got #{value.class}", subname)
+            error("expected Hash got #{value.class}")
           end
 
           rest = []
@@ -490,13 +497,13 @@ class Rx
 
           @field.select { |k, v| @field[k][:required] }.each do |pair|
             unless value.has_key?(pair[0])
-              raise ValidationError.new("expected Hash to have key: '#{pair[0]}', only had #{value.keys.inspect}", subname)
+              error("expected Hash to have key: '#{pair[0]}', only had #{value.keys.inspect}")
             end
           end
 
           unless rest.empty?
             unless @rest_schema
-              raise ValidationError.new("Hash had extra keys: #{rest.inspect}", subname)
+              error("Hash had extra keys: #{rest.inspect}")
             end
 
             rest_hash = {}
@@ -533,11 +540,11 @@ class Rx
 
         def check!(value)
           unless value.is_a?(Array)
-            raise ValidationError.new("expected Array got #{value.inspect}", subname)
+            error("expected Array got #{value.inspect}")
           end
 
           if value.length < @content_schemata.length
-            raise ValidationError.new("expected Array to have at least #{@content_schemata.length} elements, had #{value.length}", subname)
+            error("expected Array to have at least #{@content_schemata.length} elements, had #{value.length}")
           end
 
           @content_schemata.each_index do |i|
@@ -551,7 +558,7 @@ class Rx
 
           if value.length > @content_schemata.length
             unless @tail_schema
-              raise ValidationError.new("expected tail_schema", subname)
+              error("expected tail_schema")
             end
 
             begin
@@ -588,17 +595,17 @@ class Rx
 
         def check!(value)
           unless value.is_a?(String)
-            raise ValidationError.new("expected String got #{value.inspect}", subname)
+            error("expected String got #{value.inspect}")
           end
 
           if @length_range
             unless @length_range.check(value.length)
-              raise ValidationError.new("expected string with #{@length_range} characters, got #{value.length}", subname)
+              error("expected string with #{@length_range} characters, got #{value.length}")
             end
           end
 
           if @value && value != @value
-            raise ValidationError.new("expected #{@value.inspect} got #{value.inspect}", subname)
+            error("expected #{@value.inspect} got #{value.inspect}")
           end
 
           return true
@@ -614,7 +621,7 @@ class Rx
 
         def check!(value)
           unless value.instance_of?(::Time)
-            raise ValidationError.new("expected Time got #{value.inspect}", subname)
+            error("expected Time got #{value.inspect}")
           end
 
           true
