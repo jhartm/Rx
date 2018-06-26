@@ -1,6 +1,4 @@
 #!/usr/bin/ruby
-require 'find'
-require 'pathname'
 require 'rubygems'
 require 'json'
 require './ruby/Rx.rb'
@@ -8,23 +6,21 @@ require './ruby/Rx.rb'
 test_data   = {}
 test_schema = {}
 
-Dir.open('spec/data').each do |file|
-  next if file.start_with?('.')
+Dir.glob('spec/data/*.json').each do |file|
+  json = File.read(file)
 
-  json = File.open("spec/data/#{file}").read
+  name = File.basename(file).sub(File.extname(file), '')
 
-  file.sub!(/\.json$/, '')
+  test_data[name] = JSON.parse(json)
 
-  test_data[file] = JSON.parse(json)
-
-  if test_data[file].instance_of?(Array)
+  if test_data[name].is_a?(Array)
     new_data = {}
-    test_data[file].each { |e| new_data[e] = e }
-    test_data[file] = new_data
+    test_data[name].each { |e| new_data[e] = e }
+    test_data[name] = new_data
   end
 
-  test_data[file].each_pair do |k, v|
-    test_data[file][k] = JSON.parse("[ #{v} ]")[0]
+  test_data[name].each_pair do |k, v|
+    test_data[name][k] = JSON.parse("[ #{v} ]")[0]
   end
 end
 
@@ -63,16 +59,12 @@ class TAP_Emitter
   end
 end
 
-Find.find('spec/schemata') do |path|
-  next unless File.file?(path)
+Dir.glob('spec/schemata/**/*.json').each do |file|
+  json = File.read(file)
 
-  leaf = Pathname.new(path)
-                 .relative_path_from(Pathname.new('spec/schemata')).to_s
+  name = File.basename(file).sub(File.extname(file), '')
 
-  leaf.sub!(/\.json$/, '')
-
-  json = File.open(path).read
-  test_schema[leaf] = JSON.parse(json)
+  test_schema[name] = JSON.parse(json)
 end
 
 tap = TAP_Emitter.new
