@@ -36,9 +36,9 @@ class Rx
   end
 
   def expand_uri(name)
-    return name if name.match(/\A\w+:/)
+    return name if name =~ /\A\w+:/
 
-    match = name.match(/\A\/(.*?)\/(.+)\z/)
+    match = name.match(%r{\A\/(.*?)\/(.+)\z})
 
     unless match
       raise Rx::Exception.new("couldn't understand Rx type name: #{name}")
@@ -68,9 +68,7 @@ class Rx
 
     uri = expand_uri(schema['type'])
 
-    unless @type_registry.has_key?(uri)
-      raise Rx::Exception.new('unknown type')
-    end
+    raise Rx::Exception.new('unknown type') unless @type_registry.has_key?(uri)
 
     type_class = @type_registry[uri]
 
@@ -129,12 +127,12 @@ class Rx
   end
 
   class Type
-    BASE_PARAMS = ['type']
+    BASE_PARAMS = ['type'].freeze
     PARAMS = BASE_PARAMS
 
     class << self
       def subname
-        "/#{self.name.split("::").last.downcase}"
+        "/#{name.split('::').last.downcase}"
       end
 
       def uri
@@ -214,15 +212,15 @@ class Rx
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
-          if params.has_key?('of')
-            if params['of'].empty?
-              raise Rx::Exception.new("no alternatives provided for 'of' in #{uri}")
-            end
+          return unless params.has_key?('of')
 
-            @alts = []
-
-            params['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
+          if params['of'].empty?
+            raise Rx::Exception.new("no alternatives provided for 'of' in #{uri}")
           end
+
+          @alts = []
+
+          params['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
         end
 
         def check!(value)
@@ -251,9 +249,9 @@ class Rx
 
           @contents_schema = rx.make_schema(params['contents'])
 
-          if params.has_key?('length')
-            @length_range = Rx::Helper::Range.new(params['length'])
-          end
+          return unless params.has_key?('length')
+
+          @length_range = Rx::Helper::Range.new(params['length'])
         end
 
         def check!(value)
@@ -384,20 +382,20 @@ class Rx
           check_params(PARAMS, params.keys)
 
           if params.has_key?('value')
-            unless params['value'].kind_of?(Numeric)
+            unless params['value'].is_a?(Numeric)
               raise Rx::Exception.new("invalid value parameter for #{uri}")
             end
 
             @value = params['value']
           end
 
-          if params.has_key?('range')
-            @value_range = Rx::Helper::Range.new(params['range'])
-          end
+          return unless params.has_key?('range')
+
+          @value_range = Rx::Helper::Range.new(params['range'])
         end
 
         def check!(value)
-          unless value.kind_of?(Numeric)
+          unless value.is_a?(Numeric)
             raise ValidationError.new("expected Numeric got #{value.inspect}", subname)
           end
 
@@ -417,9 +415,9 @@ class Rx
         def initialize(params, rx)
           super
 
-          if @value && !@value.is_a?(Integer)
-            raise Rx::Exception.new("invalid value parameter for #{uri}")
-          end
+          return unless @value && !@value.is_a?(Integer)
+
+          raise Rx::Exception.new("invalid value parameter for #{uri}")
         end
 
         def check!(value)
@@ -439,9 +437,9 @@ class Rx
         end
 
         def check!(value)
-          unless [Numeric, String, TrueClass, FalseClass].any? { |cls| value.kind_of?(cls) }
-            raise ValidationError.new("expected One got #{value.inspect}", subname)
-          end
+          return true if [Numeric, String, TrueClass, FalseClass].any? { |cls| value.is_a?(cls) }
+
+          raise ValidationError.new("expected One got #{value.inspect}", subname)
         end
       end
 
@@ -490,13 +488,13 @@ class Rx
             end
           end
 
-          @field.select { |k,v| @field[k][:required] }.each do |pair|
+          @field.select { |k, v| @field[k][:required] }.each do |pair|
             unless value.has_key?(pair[0])
               raise ValidationError.new("expected Hash to have key: '#{pair[0]}', only had #{value.keys.inspect}", subname)
             end
           end
 
-          if rest.length > 0
+          unless rest.empty?
             unless @rest_schema
               raise ValidationError.new("Hash had extra keys: #{rest.inspect}", subname)
             end
@@ -522,15 +520,15 @@ class Rx
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
-          unless params.has_key?('contents') && params['contents'].kind_of?(Array)
+          unless params.has_key?('contents') && params['contents'].is_a?(Array)
             raise Rx::Exception.new("missing or invalid contents for #{uri}")
           end
 
           @content_schemata = params['contents'].map { |s| rx.make_schema(s) }
 
-          if params.has_key?('tail')
-            @tail_schema = rx.make_schema(params['tail'])
-          end
+          return unless params.has_key?('tail')
+
+          @tail_schema = rx.make_schema(params['tail'])
         end
 
         def check!(value)
@@ -579,13 +577,13 @@ class Rx
             @length_range = Rx::Helper::Range.new(params['length'])
           end
 
-          if params.has_key?('value')
-            unless params['value'].is_a?(String)
-              raise Rx::Exception.new("invalid value parameter for #{uri}")
-            end
+          return unless params.has_key?('value')
 
-            @value = params['value']
+          unless params['value'].is_a?(String)
+            raise Rx::Exception.new("invalid value parameter for #{uri}")
           end
+
+          @value = params['value']
         end
 
         def check!(value)

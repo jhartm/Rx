@@ -27,7 +27,7 @@ end
 def normalize(entries, test_data)
   entries = { "*" => nil } if entries == '*'
 
-  if entries.kind_of?(Array)
+  if entries.is_a?(Array)
     new_entries = {}
     entries.each { |n| new_entries[n].nil? }
     entries = new_entries
