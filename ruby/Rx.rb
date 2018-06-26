@@ -129,38 +129,38 @@ class Rx
   end
 
   class Type
+    BASE_PARAMS = ['type']
+    PARAMS = BASE_PARAMS
+
     class << self
       def subname
-        self.name.split("::").last.downcase
+        "/#{self.name.split("::").last.downcase}"
       end
 
       def uri
-        'tag:codesimply.com,2008:rx/core/' + subname
+        File.join('tag:codesimply.com,2008:rx/core/', subname)
       end
     end
 
-    def initialize(param, rx)
-      assert_valid_params(param)
+    def subname
+      self.class.subname
     end
 
     def uri
       self.class.uri
     end
 
-    def assert_valid_params(param)
-      param.each_key do |key|
-        unless allowed_param?(key)
+    def check_params(allowed_params, params)
+      if allowed_params == BASE_PARAMS
+        return true if params.empty?
+        return true if params == allowed_params
+        raise Rx::Exception.new('this type is not parameterized')
+      end
+
+      params.each do |key|
+        unless allowed_params.include?(key)
           raise Rx::Exception.new("unknown parameter #{key} for #{uri}")
         end
-      end
-    end
-
-    module NoParams
-      def initialize(param, rx)
-        return if param.keys.empty?
-        return if param.keys == ['type']
-
-        raise Rx::Exception.new('this type is not parameterized')
       end
     end
 
@@ -176,26 +176,22 @@ class Rx
       end
 
       class All < Core
-        @@allowed_param = { 'of' => true, 'type' => true }
+        PARAMS = BASE_PARAMS + ['of']
 
-        def allowed_param?(p)
-          @@allowed_param[p]
-        end
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
 
-        def initialize(param, rx)
-          super
-
-          unless param.has_key?('of')
+          unless params.has_key?('of')
             raise Rx::Exception.new("no 'of' parameter provided for #{uri}")
           end
 
-          if param['of'].length == 0
+          if params['of'].empty?
             raise Rx::Exception.new("no schemata provided for 'of' in #{uri}")
           end
 
           @alts = []
 
-          param['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
+          params['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
         end
 
         def check!(value)
@@ -203,7 +199,7 @@ class Rx
             begin
               alt.check!(value)
             rescue ValidationError => e
-              e.path = "/all" + e.path
+              e.path = subname + e.path
               raise e
             end
           end
@@ -213,23 +209,19 @@ class Rx
       end
 
       class Any < Core
-        @@allowed_param = { 'of' => true, 'type' => true }
+        PARAMS = BASE_PARAMS + ['of']
 
-        def allowed_param?(p)
-          @@allowed_param[p]
-        end
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
 
-        def initialize(param, rx)
-          super
-
-          if param['of']
-            if param['of'].length == 0
+          if params.has_key?('of')
+            if params['of'].empty?
               raise Rx::Exception.new("no alternatives provided for 'of' in #{uri}")
             end
 
             @alts = []
 
-            param['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
+            params['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
           end
         end
 
@@ -243,39 +235,35 @@ class Rx
             end
           end
 
-          raise ValidationError.new("expected one to match", "/any")
+          raise ValidationError.new("expected one to match", subname)
         end
       end
 
       class Arr < Core
-        @@allowed_param = { 'contents' => true, 'length' => true, 'type' => true }
+        PARAMS = BASE_PARAMS + ['contents', 'length']
 
-        def allowed_param?(p)
-          @@allowed_param[p]
-        end
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
 
-        def initialize(param, rx)
-          super
-
-          unless param['contents']
+          unless params.has_key?('contents')
             raise Rx::Exception.new("no contents schema given for #{uri}")
           end
 
-          @contents_schema = rx.make_schema(param['contents'])
+          @contents_schema = rx.make_schema(params['contents'])
 
-          if param['length']
-            @length_range = Rx::Helper::Range.new(param['length'])
+          if params.has_key?('length')
+            @length_range = Rx::Helper::Range.new(params['length'])
           end
         end
 
         def check!(value)
-          unless value.instance_of?(Array)
-            raise ValidationError.new("expected array got #{value.class}", "/arr")
+          unless value.is_a?(Array)
+            raise ValidationError.new("expected array got #{value.class}", subname)
           end
 
           if @length_range
             unless @length_range.check(value.length)
-              raise ValidationError.new("expected array with #{@length_range} elements, got #{value.length}", "/arr")
+              raise ValidationError.new("expected array with #{@length_range} elements, got #{value.length}", subname)
             end
           end
 
@@ -284,7 +272,7 @@ class Rx
               begin
                 @contents_schema.check!(v)
               rescue ValidationError => e
-                e.path = "/arr" + e.path
+                e.path = subname + e.path
                 raise e
               end
             end
@@ -295,67 +283,71 @@ class Rx
       end
 
       class Bool < Core
-        include NoParams
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
+        end
 
         def check!(value)
           return true if [TrueClass, FalseClass].include?(value.class)
 
-          raise ValidationError.new("expected bool got #{value.inspect}", "/bool")
+          raise ValidationError.new("expected bool got #{value.inspect}", subname)
         end
       end
 
       class Fail < Core
-        include NoParams
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
+        end
 
         def check(value)
           false
         end
 
         def check!(value)
-          raise ValidationError.new("explicit fail", "/fail")
+          raise ValidationError.new("explicit fail", subname)
         end
       end
 
       #
       # Added by dan - 81030
       class Date < Core
-        include NoParams
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
+        end
 
         def check!(value)
           return true if value.instance_of?(::Date)
 
-          raise ValidationError("expected Date got #{value.inspect}", "/date")
+          raise ValidationError("expected Date got #{value.inspect}", subname)
         end
       end
 
       class Def < Core
-        include NoParams
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
+        end
 
         def check!(value)
-          raise ValidationError.new("def failed", "/def") if value.nil?
+          raise ValidationError.new("def failed", subname) if value.nil?
         end
       end
 
       class Map < Core
-        @@allowed_param = { 'values' => true, 'type' => true }
+        PARAMS = BASE_PARAMS + ['values']
 
-        def allowed_param?(p)
-          @@allowed_param[p]
-        end
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
 
-        def initialize(param, rx)
-          super
-
-          unless param['values']
+          unless params.has_key?('values')
             raise Rx::Exception.new("no values schema given for #{uri}")
           end
 
-          @value_schema = rx.make_schema(param['values'])
+          @value_schema = rx.make_schema(params['values'])
         end
 
         def check!(value)
           unless value.instance_of?(Hash) || value.class.to_s == "HashWithIndifferentAccess"
-            raise ValidationError.new("expected map got #{value.inspect}", "/map")
+            raise ValidationError.new("expected map got #{value.inspect}", subname)
           end
 
           if @value_schema
@@ -363,7 +355,7 @@ class Rx
               begin
                 @value_schema.check!(v)
               rescue ValidationError => e
-                e.path = "/map" + e.path
+                e.path = subname + e.path
                 raise e
               end
             end
@@ -374,49 +366,47 @@ class Rx
       end
 
       class Nil < Core
-        include NoParams
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
+        end
 
         def check!(value)
           return true if value.nil?
 
-          raise ValidationError.new("expected nil got #{value.inspect}", "/nil")
+          raise ValidationError.new("expected nil got #{value.inspect}", subname)
         end
       end
 
       class Num < Core
-        @@allowed_param = { 'range' => true, 'type' => true, 'value' => true }
+        PARAMS = BASE_PARAMS + ['range', 'value']
 
-        def allowed_param?(p)
-          @@allowed_param[p]
-        end
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
 
-        def initialize(param, rx)
-          super
-
-          if param.has_key?('value')
-            unless param['value'].kind_of?(Numeric)
+          if params.has_key?('value')
+            unless params['value'].kind_of?(Numeric)
               raise Rx::Exception.new("invalid value parameter for #{uri}")
             end
 
-            @value = param['value']
+            @value = params['value']
           end
 
-          if param['range']
-            @value_range = Rx::Helper::Range.new(param['range'])
+          if params.has_key?('range')
+            @value_range = Rx::Helper::Range.new(params['range'])
           end
         end
 
         def check!(value)
           unless value.kind_of?(Numeric)
-            raise ValidationError.new("expected Numeric got #{value.inspect}", "/#{self.class.subname}")
+            raise ValidationError.new("expected Numeric got #{value.inspect}", subname)
           end
 
           if @value_range && !@value_range.check(value)
-            raise ValidationError.new("expected Numeric in range #{@value_range} got #{value.inspect}", "/#{self.class.subname}")
+            raise ValidationError.new("expected Numeric in range #{@value_range} got #{value.inspect}", subname)
           end
 
           if @value && value != @value
-            raise ValidationError.new("expected Numeric to equal #{@value} got #{value.inspect}", "/#{self.class.subname}")
+            raise ValidationError.new("expected Numeric to equal #{@value} got #{value.inspect}", subname)
           end
 
           true
@@ -424,10 +414,10 @@ class Rx
       end
 
       class Int < Num
-        def initialize(param, rx)
+        def initialize(params, rx)
           super
 
-          if @value && (@value % 1) != 0
+          if @value && !@value.is_a?(Integer)
             raise Rx::Exception.new("invalid value parameter for #{uri}")
           end
         end
@@ -435,8 +425,8 @@ class Rx
         def check!(value)
           super
 
-          unless (value % 1) == 0
-            raise ValidationError.new("expected Integer got #{value.inspect}", "/int")
+          unless value.is_a?(Integer)
+            raise ValidationError.new("expected Integer got #{value.inspect}", subname)
           end
 
           return true
@@ -444,51 +434,44 @@ class Rx
       end
 
       class One < Core
-        include NoParams
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
+        end
 
         def check!(value)
           unless [Numeric, String, TrueClass, FalseClass].any? { |cls| value.kind_of?(cls) }
-            raise ValidationError.new("expected One got #{value.inspect}", "/one")
+            raise ValidationError.new("expected One got #{value.inspect}", subname)
           end
         end
       end
 
       class Rec < Core
-        @@allowed_param = {
-          'type' => true,
-          'rest' => true,
-          'required' => true,
-          'optional' => true,
-        }
+        PARAMS = BASE_PARAMS + ['required', 'optional', 'rest']
 
-        def allowed_param?(p)
-          @@allowed_param[p]
-        end
-
-        def initialize(param, rx)
-          super
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
 
           @field = {}
 
-          @rest_schema = rx.make_schema(param['rest']) if param['rest']
+          @rest_schema = rx.make_schema(params['rest']) if params['rest']
 
           ['optional', 'required'].each do |type|
-            next unless param[type]
+            next unless params[type]
 
-            param[type].keys.each do |field|
+            params[type].keys.each do |field|
               if @field[field]
                 raise Rx::Exception.new("#{field} in both required and optional")
               end
 
               @field[field] = { :required => (type == 'required'),
-                                :schema   => rx.make_schema(param[type][field]) }
+                                :schema   => rx.make_schema(params[type][field]) }
             end
           end
         end
 
         def check!(value)
           unless value.instance_of?(Hash) || value.class.to_s == "HashWithIndifferentAccess"
-            raise ValidationError.new("expected Hash got #{value.class}", "/rec")
+            raise ValidationError.new("expected Hash got #{value.class}", subname)
           end
 
           rest = []
@@ -502,20 +485,20 @@ class Rx
             begin
               @field[field][:schema].check!(field_value)
             rescue ValidationError => e
-              e.path = "/rec:'#{field}'"
+              e.path = "#{subname}:'#{field}'"
               raise e
             end
           end
 
           @field.select { |k,v| @field[k][:required] }.each do |pair|
             unless value.has_key?(pair[0])
-              raise ValidationError.new("expected Hash to have key: '#{pair[0]}', only had #{value.keys.inspect}", "/rec")
+              raise ValidationError.new("expected Hash to have key: '#{pair[0]}', only had #{value.keys.inspect}", subname)
             end
           end
 
           if rest.length > 0
             unless @rest_schema
-              raise ValidationError.new("Hash had extra keys: #{rest.inspect}", "/rec")
+              raise ValidationError.new("Hash had extra keys: #{rest.inspect}", subname)
             end
 
             rest_hash = {}
@@ -524,7 +507,7 @@ class Rx
             begin
               @rest_schema.check!(rest_hash)
             rescue ValidationError => e
-              e.path = "/rec"
+              e.path = subname
               raise e
             end
           end
@@ -534,56 +517,50 @@ class Rx
       end
 
       class Seq < Core
-        @@allowed_param = { 'tail' => true, 'contents' => true, 'type' => true }
+        PARAMS = BASE_PARAMS + ['tail', 'contents', 'type']
 
-        def allowed_param?(p)
-          @@allowed_param[p]
-        end
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
 
-        def initialize(param, rx)
-          super
-
-          unless param['contents'] && param['contents'].kind_of?(Array)
+          unless params.has_key?('contents') && params['contents'].kind_of?(Array)
             raise Rx::Exception.new("missing or invalid contents for #{uri}")
           end
 
-          @content_schemata = param['contents'].map { |s| rx.make_schema(s) }
+          @content_schemata = params['contents'].map { |s| rx.make_schema(s) }
 
-          if param['tail']
-            @tail_schema = rx.make_schema(param['tail'])
+          if params.has_key?('tail')
+            @tail_schema = rx.make_schema(params['tail'])
           end
         end
 
         def check!(value)
-          unless value.instance_of?(Array)
-            raise ValidationError.new("expected Array got #{value.inspect}", "/seq")
+          unless value.is_a?(Array)
+            raise ValidationError.new("expected Array got #{value.inspect}", subname)
           end
 
           if value.length < @content_schemata.length
-            raise ValidationError.new("expected Array to have at least #{@content_schemata.length} elements, had #{value.length}", "/seq")
+            raise ValidationError.new("expected Array to have at least #{@content_schemata.length} elements, had #{value.length}", subname)
           end
 
           @content_schemata.each_index do |i|
             begin
               @content_schemata[i].check!(value[i])
             rescue ValidationError => e
-              e.path = "/seq" + e.path
+              e.path = subname + e.path
               raise e
             end
           end
 
           if value.length > @content_schemata.length
             unless @tail_schema
-              raise ValidationError.new("expected tail_schema", "/seq")
+              raise ValidationError.new("expected tail_schema", subname)
             end
 
             begin
-              @tail_schema.check!(value[
-                                        @content_schemata.length,
-                                        value.length - @content_schemata.length
-                                       ])
+              @tail_schema.check!(value[@content_schemata.length,
+                                        value.length - @content_schemata.length])
             rescue ValidationError => e
-              e.path = "/seq" + e.path
+              e.path = subname + e.path
               raise e
             end
           end
@@ -593,41 +570,37 @@ class Rx
       end
 
       class Str < Core
-        @@allowed_param = { 'type' => true, 'value' => true, 'length' => true }
+        PARAMS = BASE_PARAMS + ['value', 'length']
 
-        def allowed_param?(p)
-          @@allowed_param[p]
-        end
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
 
-        def initialize(param, rx)
-          super
-
-          if param['length']
-            @length_range = Rx::Helper::Range.new(param['length'])
+          if params.has_key?('length')
+            @length_range = Rx::Helper::Range.new(params['length'])
           end
 
-          if param.has_key?('value')
-            unless param['value'].instance_of?(String)
+          if params.has_key?('value')
+            unless params['value'].is_a?(String)
               raise Rx::Exception.new("invalid value parameter for #{uri}")
             end
 
-            @value = param['value']
+            @value = params['value']
           end
         end
 
         def check!(value)
-          unless value.instance_of?(String)
-            raise ValidationError.new("expected String got #{value.inspect}", "/str")
+          unless value.is_a?(String)
+            raise ValidationError.new("expected String got #{value.inspect}", subname)
           end
 
           if @length_range
             unless @length_range.check(value.length)
-              raise ValidationError.new("expected string with #{@length_range} characters, got #{value.length}", "/str")
+              raise ValidationError.new("expected string with #{@length_range} characters, got #{value.length}", subname)
             end
           end
 
           if @value && value != @value
-            raise ValidationError.new("expected #{@value.inspect} got #{value.inspect}", "/str")
+            raise ValidationError.new("expected #{@value.inspect} got #{value.inspect}", subname)
           end
 
           return true
@@ -637,11 +610,13 @@ class Rx
       #
       # Added by dan - 81106
       class Time < Core
-        include NoParams
+        def initialize(params, rx)
+          check_params(PARAMS, params.keys)
+        end
 
         def check!(value)
           unless value.instance_of?(::Time)
-            raise ValidationError.new("expected Time got #{value.inspect}", "/time")
+            raise ValidationError.new("expected Time got #{value.inspect}", subname)
           end
 
           true

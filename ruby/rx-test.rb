@@ -47,15 +47,16 @@ class TAP_Emitter
   attr_reader :failures
 
   def initialize
+    @i = 0
     @failures = 0
   end
 
   def ok(bool, desc)
-    @i.nil? ? @i = 1 : @i += 1
+    @i += 1
 
     @failures += 1 unless bool
 
-    printf("%s %s - %s\n", bool ? 'ok' : 'not ok', @i, desc)
+    puts "#{bool ? 'ok' : 'not ok'} #{@i} - #{desc}\n"
   end
 end
 
@@ -99,6 +100,7 @@ test_schema.keys.sort.each do |schema_name|
   end
 
   begin
+
     schema = rx.make_schema(schema_test_desc['schema'])
   rescue Rx::Exception => e
     if schema_test_desc['invalid']
@@ -136,11 +138,11 @@ test_schema.keys.sort.each do |schema_name|
 
       entries.each_pair do |entry, want|
         result = begin
-          schema.check!(test_data[source][entry])
-          true
-        rescue Rx::ValidationError => e
-          false
-        end
+                   schema.check!(test_data[source][entry])
+                   true
+                 rescue Rx::ValidationError => e
+                   false
+                 end
 
         ok = (pf == 'pass' && result) || (pf == 'fail' && !result)
 
