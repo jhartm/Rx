@@ -11,9 +11,7 @@ class Rx
     @type_registry = {}
     @prefix = { '' => TAG_CORE, '.meta' => TAG_META }
 
-    return unless opt[:load_core]
-
-    Type::Core.core_types.each { |t| register_type(t) }
+    Type::Core.core_types.each { |t| register_type(t) } unless opt[:load_core]
   end
 
   def register_type(type)
