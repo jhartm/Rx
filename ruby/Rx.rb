@@ -1,7 +1,7 @@
 class Rx
-  TAG_BASE = 'tag:codesimply.com,2008:rx/'
-  TAG_CORE = File.join(TAG_BASE, 'core/')
-  TAG_META = File.join(TAG_BASE, 'meta/')
+  TAG_BASE = "tag:codesimply.com,2008:rx/"
+  TAG_CORE = File.join(TAG_BASE, "core/")
+  TAG_META = File.join(TAG_BASE, "meta/")
 
   def self.schema(schema)
     Rx.new(load_core: true).make_schema(schema)
@@ -9,9 +9,9 @@ class Rx
 
   def initialize(opt = {})
     @type_registry = {}
-    @prefix = { '' => TAG_CORE, '.meta' => TAG_META }
+    @prefix = { "" => TAG_CORE, ".meta" => TAG_META }
 
-    Type::Core.core_types.each { |t| register_type(t) } unless opt[:load_core]
+    Type::Core.core_types.each { |t| register_type(t) } if opt[:load_core]
   end
 
   def register_type(type)
@@ -33,7 +33,7 @@ class Rx
     # should this be in a begin/rescue?
     make_schema(schema)
 
-    @type_registry[uri] = { 'schema' => schema }
+    @type_registry[uri] = { "schema" => schema }
   end
 
   def expand_uri(name)
@@ -61,23 +61,23 @@ class Rx
   end
 
   def make_schema(schema)
-    schema = { 'type' => schema } if schema.instance_of?(String)
+    schema = { "type" => schema } if schema.instance_of?(String)
 
-    unless schema.instance_of?(Hash) && schema['type']
-      raise Rx::Exception.new('invalid type')
+    unless schema.instance_of?(Hash) && schema["type"]
+      raise Rx::Exception.new("invalid type")
     end
 
-    uri = expand_uri(schema['type'])
+    uri = expand_uri(schema["type"])
 
-    raise Rx::Exception.new('unknown type') unless @type_registry.has_key?(uri)
+    raise Rx::Exception.new("unknown type") unless @type_registry.has_key?(uri)
 
     type_class = @type_registry[uri]
 
     return type_class.new(schema, self) unless type_class.instance_of?(Hash)
 
-    return make_schema(type_class['schema']) if schema.keys == ['type']
+    return make_schema(type_class["schema"]) if schema.keys == ["type"]
 
-    raise Rx::Exception.new('composed type does not take check arguments')
+    raise Rx::Exception.new("composed type does not take check arguments")
   end
 
   class Helper
@@ -86,8 +86,8 @@ class Rx
         @range = {}
 
         arg.each_pair do |key, value|
-          unless ['min', 'max', 'min-ex', 'max-ex'].index(key)
-            raise Rx::Exception.new('illegal argument for Rx::Helper::Range')
+          unless ["min", "max", "min-ex", "max-ex"].index(key)
+            raise Rx::Exception.new("illegal argument for Rx::Helper::Range")
           end
 
           @range[key] = value
@@ -95,10 +95,10 @@ class Rx
       end
 
       def check(value)
-        return false unless @range['min'].nil? || value >= @range['min']
-        return false unless @range['min-ex'].nil? || value > @range['min-ex']
-        return false unless @range['max-ex'].nil? || value < @range['max-ex']
-        return false unless @range['max'].nil? || value <= @range['max']
+        return false unless @range["min"].nil? || value >= @range["min"]
+        return false unless @range["min-ex"].nil? || value > @range["min-ex"]
+        return false unless @range["max-ex"].nil? || value < @range["max-ex"]
+        return false unless @range["max"].nil? || value <= @range["max"]
         return true
       end
     end
@@ -128,12 +128,12 @@ class Rx
   end
 
   class Type
-    BASE_PARAMS = ['type'].freeze
+    BASE_PARAMS = ["type"].freeze
     PARAMS = BASE_PARAMS
 
     class << self
       def subname
-        "/#{name.split('::').last.downcase}"
+        "/#{name.split("::").last.downcase}"
       end
 
       def uri
@@ -153,7 +153,7 @@ class Rx
       if allowed_params == BASE_PARAMS
         return true if params.empty?
         return true if params == allowed_params
-        raise Rx::Exception.new('this type is not parameterized')
+        raise Rx::Exception.new("this type is not parameterized")
       end
 
       params.each do |key|
@@ -179,22 +179,22 @@ class Rx
       end
 
       class All < Core
-        PARAMS = BASE_PARAMS + ['of']
+        PARAMS = BASE_PARAMS + ["of"]
 
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
-          unless params.has_key?('of')
+          unless params.has_key?("of")
             raise Rx::Exception.new("no 'of' parameter provided for #{uri}")
           end
 
-          if params['of'].empty?
+          if params["of"].empty?
             raise Rx::Exception.new("no schemata provided for 'of' in #{uri}")
           end
 
           @alts = []
 
-          params['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
+          params["of"].each { |alt| @alts.push(rx.make_schema(alt)) }
         end
 
         def check!(value)
@@ -212,20 +212,20 @@ class Rx
       end
 
       class Any < Core
-        PARAMS = BASE_PARAMS + ['of']
+        PARAMS = BASE_PARAMS + ["of"]
 
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
-          return unless params.has_key?('of')
+          return unless params.has_key?("of")
 
-          if params['of'].empty?
+          if params["of"].empty?
             raise Rx::Exception.new("no alternatives provided for 'of' in #{uri}")
           end
 
           @alts = []
 
-          params['of'].each { |alt| @alts.push(rx.make_schema(alt)) }
+          params["of"].each { |alt| @alts.push(rx.make_schema(alt)) }
         end
 
         def check!(value)
@@ -243,20 +243,20 @@ class Rx
       end
 
       class Arr < Core
-        PARAMS = BASE_PARAMS + ['contents', 'length']
+        PARAMS = BASE_PARAMS + ["contents", "length"]
 
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
-          unless params.has_key?('contents')
+          unless params.has_key?("contents")
             raise Rx::Exception.new("no contents schema given for #{uri}")
           end
 
-          @contents_schema = rx.make_schema(params['contents'])
+          @contents_schema = rx.make_schema(params["contents"])
 
-          return unless params.has_key?('length')
+          return unless params.has_key?("length")
 
-          @length_range = Rx::Helper::Range.new(params['length'])
+          @length_range = Rx::Helper::Range.new(params["length"])
         end
 
         def check!(value)
@@ -336,16 +336,16 @@ class Rx
       end
 
       class Map < Core
-        PARAMS = BASE_PARAMS + ['values']
+        PARAMS = BASE_PARAMS + ["values"]
 
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
-          unless params.has_key?('values')
+          unless params.has_key?("values")
             raise Rx::Exception.new("no values schema given for #{uri}")
           end
 
-          @value_schema = rx.make_schema(params['values'])
+          @value_schema = rx.make_schema(params["values"])
         end
 
         def check!(value)
@@ -381,22 +381,22 @@ class Rx
       end
 
       class Num < Core
-        PARAMS = BASE_PARAMS + ['range', 'value']
+        PARAMS = BASE_PARAMS + ["range", "value"]
 
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
-          if params.has_key?('value')
-            unless params['value'].is_a?(Numeric)
+          if params.has_key?("value")
+            unless params["value"].is_a?(Numeric)
               raise Rx::Exception.new("invalid value parameter for #{uri}")
             end
 
-            @value = params['value']
+            @value = params["value"]
           end
 
-          return unless params.has_key?('range')
+          return unless params.has_key?("range")
 
-          @value_range = Rx::Helper::Range.new(params['range'])
+          @value_range = Rx::Helper::Range.new(params["range"])
         end
 
         def check!(value)
@@ -449,16 +449,16 @@ class Rx
       end
 
       class Rec < Core
-        PARAMS = BASE_PARAMS + ['required', 'optional', 'rest']
+        PARAMS = BASE_PARAMS + ["required", "optional", "rest"]
 
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
           @field = {}
 
-          @rest_schema = rx.make_schema(params['rest']) if params['rest']
+          @rest_schema = rx.make_schema(params["rest"]) if params["rest"]
 
-          ['optional', 'required'].each do |type|
+          ["optional", "required"].each do |type|
             next unless params[type]
 
             params[type].keys.each do |field|
@@ -466,7 +466,7 @@ class Rx
                 raise Rx::Exception.new("#{field} in both required and optional")
               end
 
-              @field[field] = { :required => (type == 'required'),
+              @field[field] = { :required => (type == "required"),
                                 :schema   => rx.make_schema(params[type][field]) }
             end
           end
@@ -520,20 +520,20 @@ class Rx
       end
 
       class Seq < Core
-        PARAMS = BASE_PARAMS + ['tail', 'contents', 'type']
+        PARAMS = BASE_PARAMS + ["tail", "contents", "type"]
 
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
-          unless params.has_key?('contents') && params['contents'].is_a?(Array)
+          unless params.has_key?("contents") && params["contents"].is_a?(Array)
             raise Rx::Exception.new("missing or invalid contents for #{uri}")
           end
 
-          @content_schemata = params['contents'].map { |s| rx.make_schema(s) }
+          @content_schemata = params["contents"].map { |s| rx.make_schema(s) }
 
-          return unless params.has_key?('tail')
+          return unless params.has_key?("tail")
 
-          @tail_schema = rx.make_schema(params['tail'])
+          @tail_schema = rx.make_schema(params["tail"])
         end
 
         def check!(value)
@@ -573,22 +573,22 @@ class Rx
       end
 
       class Str < Core
-        PARAMS = BASE_PARAMS + ['value', 'length']
+        PARAMS = BASE_PARAMS + ["value", "length"]
 
         def initialize(params, rx)
           check_params(PARAMS, params.keys)
 
-          if params.has_key?('length')
-            @length_range = Rx::Helper::Range.new(params['length'])
+          if params.has_key?("length")
+            @length_range = Rx::Helper::Range.new(params["length"])
           end
 
-          return unless params.has_key?('value')
+          return unless params.has_key?("value")
 
-          unless params['value'].is_a?(String)
+          unless params["value"].is_a?(String)
             raise Rx::Exception.new("invalid value parameter for #{uri}")
           end
 
-          @value = params['value']
+          @value = params["value"]
         end
 
         def check!(value)
