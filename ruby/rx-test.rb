@@ -3,10 +3,13 @@ require 'rubygems'
 require 'json'
 require './ruby/Rx.rb'
 
+DATA_DIR = "spec/data/"
+SCHEMATA_DIR = "spec/schemata/"
+
 test_data   = {}
 test_schema = {}
 
-Dir.glob("spec/data/*.json").each do |file|
+Dir.glob(File.join(DATA_DIR, "*.json")).each do |file|
   json = File.read(file)
 
   name = File.basename(file).sub(File.extname(file), "")
@@ -60,10 +63,10 @@ class TAP_Emitter
   end
 end
 
-Dir.glob("spec/schemata/**/*.json").each do |file|
+Dir.glob(File.join(SCHEMATA_DIR, "**/*.json")).each do |file|
   json = File.read(file)
 
-  name = File.basename(file).sub(File.extname(file), "")
+  name = file.sub(SCHEMATA_DIR, "").sub(File.extname(file), "")
 
   test_schema[name] = JSON.parse(json)
 end
@@ -122,6 +125,8 @@ test_schema.keys.sort.each do |schema_name|
   end
 
   ["pass", "fail"].each do |pf|
+    valid_string = (pf == "pass" ? "VALID  " : "INVALID")
+
     next unless schema_test_desc[pf]
 
     schema_test_desc[pf].each_pair do |source, entries|
@@ -131,7 +136,7 @@ test_schema.keys.sort.each do |schema_name|
         result = schema.check(test_data[source][entry])
         ok = (pf == "pass" && result) || (pf == "fail" && !result)
 
-        desc = "#{pf == "pass" ? "VALID  " : "INVALID"}: #{source}/#{entry} against #{schema_name}"
+        desc = "#{valid_string}: #{source}/#{entry} against #{schema_name}"
 
         tap.ok(ok, desc)
       end
@@ -146,7 +151,7 @@ test_schema.keys.sort.each do |schema_name|
 
         ok = (pf == "pass" && result) || (pf == "fail" && !result)
 
-        desc = "#{pf == "pass" ? "VALID  " : "INVALID"}: #{source}-#{entry} against #{schema_name}"
+        desc = "#{valid_string}: #{source}-#{entry} against #{schema_name}"
 
         tap.ok(ok, desc)
       end

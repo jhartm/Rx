@@ -95,10 +95,10 @@ class Rx
       end
 
       def check(value)
-        return false unless @range["min"].nil? || value >= @range["min"]
-        return false unless @range["min-ex"].nil? || value > @range["min-ex"]
-        return false unless @range["max-ex"].nil? || value < @range["max-ex"]
-        return false unless @range["max"].nil? || value <= @range["max"]
+        return false unless @range["min"   ].nil? || value >= @range["min"   ]
+        return false unless @range["min-ex"].nil? || value >  @range["min-ex"]
+        return false unless @range["max-ex"].nil? || value <  @range["max-ex"]
+        return false unless @range["max"   ].nil? || value <= @range["max"   ]
         return true
       end
     end
