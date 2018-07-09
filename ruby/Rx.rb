@@ -39,7 +39,7 @@ class Rx
   def expand_uri(name)
     return name if name =~ /\A\w+:/
 
-    match = name.match(%r{\A\/(.*?)\/(.+)\z})
+    match = name.match(/\A\/(.*?)\/(.+)\z/)
 
     unless match
       raise Rx::Exception.new("couldn't understand Rx type name: #{name}")
