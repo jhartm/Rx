@@ -428,7 +428,7 @@ class Rx
         def check!(value)
           super
 
-          unless value.is_a?(Integer)
+          unless value % 1 == 0
             error("expected Integer got #{value.inspect}")
           end
 
