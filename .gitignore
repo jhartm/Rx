@@ -7,3 +7,4 @@ perl/spec
 perl/.build
 perl/Data-Rx-*
 *~
+ruby/*.gem
