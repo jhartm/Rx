@@ -6,7 +6,8 @@ Gem::Specification.new do |spec|
   spec.description = "Data validation that matches up with JSON-style data structures"
   spec.authors = ["Ricardo Signes"]
   spec.email = "www@rjbs.manxome.org"
-  spec.files = ["Rx.rb"]
+  spec.require_paths = ["."]
+  spec.files = ["rx.rb"]
   spec.homepage = "http://rx.codesimply.com"
   spec.licenses = ["GPL-2.0", "Artistic-1.0"]
 end
