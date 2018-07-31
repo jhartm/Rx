@@ -129,7 +129,8 @@ class Rx
 
   class Type
     BASE_PARAMS = ["type"].freeze
-    PARAMS = BASE_PARAMS
+    REQUIRED_PARAMS = BASE_PARAMS
+    OPTIONAL_PARAMS = []
 
     class << self
       def subname
@@ -149,18 +150,28 @@ class Rx
       self.class.uri
     end
 
-    def check_params(allowed_params, params)
-      if allowed_params == BASE_PARAMS
-        return true if params.empty?
-        return true if params == allowed_params
-        raise Rx::Exception.new("this type is not parameterized")
-      end
-
-      params.each do |key|
-        unless allowed_params.include?(key)
-          raise Rx::Exception.new("unknown parameter #{key} for #{uri}")
+    def check_params(required_params, optional_params, params)
+      required_params.each do |required_param|
+        unless params.include?(required_param)
+          raise Rx::Exception.new("missing required parameter '#{required_param}' for uri #{uri}")
         end
       end
+
+      params.each do |param|
+        unless (required_params + optional_params).include?(param)
+          raise Rx::Exception.new("unknown parameter '#{param}' for uri #{uri}")
+        end
+      end
+
+      true
+    end
+
+    def has_schemata(params, key)
+      if params[key].nil? || params[key].empty?
+        raise Rx::Exception.new("no schemata provided for parameter '#{key}' in uri #{uri}")
+      end
+
+      true
     end
 
     def error(msg, path = subname)
@@ -179,18 +190,12 @@ class Rx
       end
 
       class All < Core
-        PARAMS = BASE_PARAMS + ["of"]
+        REQUIRED_PARAMS = BASE_PARAMS + ["of"]
 
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
 
-          unless params.has_key?("of")
-            raise Rx::Exception.new("no 'of' parameter provided for #{uri}")
-          end
-
-          if params["of"].empty?
-            raise Rx::Exception.new("no schemata provided for 'of' in #{uri}")
-          end
+          has_schemata(params, "of")
 
           @alts = []
 
@@ -212,16 +217,14 @@ class Rx
       end
 
       class Any < Core
-        PARAMS = BASE_PARAMS + ["of"]
+        OPTIONAL_PARAMS = ["of"]
 
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
 
           return unless params.has_key?("of")
 
-          if params["of"].empty?
-            raise Rx::Exception.new("no alternatives provided for 'of' in #{uri}")
-          end
+          has_schemata(params, "of")
 
           @alts = []
 
@@ -243,14 +246,13 @@ class Rx
       end
 
       class Arr < Core
-        PARAMS = BASE_PARAMS + ["contents", "length"]
+        REQUIRED_PARAMS = BASE_PARAMS + ["contents"]
+        OPTIONAL_PARAMS = ["length"]
 
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
 
-          unless params.has_key?("contents")
-            raise Rx::Exception.new("no contents schema given for #{uri}")
-          end
+          has_schemata(params, "contents")
 
           @contents_schema = rx.make_schema(params["contents"])
 
@@ -287,7 +289,7 @@ class Rx
 
       class Bool < Core
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
         end
 
         def check!(value)
@@ -299,7 +301,7 @@ class Rx
 
       class Fail < Core
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
         end
 
         def check(value)
@@ -315,7 +317,7 @@ class Rx
       # Added by dan - 81030
       class Date < Core
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
         end
 
         def check!(value)
@@ -327,7 +329,7 @@ class Rx
 
       class Def < Core
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
         end
 
         def check!(value)
@@ -336,14 +338,12 @@ class Rx
       end
 
       class Map < Core
-        PARAMS = BASE_PARAMS + ["values"]
+        REQUIRED_PARAMS = BASE_PARAMS + ["values"]
 
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
 
-          unless params.has_key?("values")
-            raise Rx::Exception.new("no values schema given for #{uri}")
-          end
+          has_schemata(params, "values")
 
           @value_schema = rx.make_schema(params["values"])
         end
@@ -370,7 +370,7 @@ class Rx
 
       class Nil < Core
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
         end
 
         def check!(value)
@@ -381,10 +381,10 @@ class Rx
       end
 
       class Num < Core
-        PARAMS = BASE_PARAMS + ["range", "value"]
+        OPTIONAL_PARAMS = ["range", "value"]
 
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
 
           if params.has_key?("value")
             unless params["value"].is_a?(Numeric)
@@ -438,7 +438,7 @@ class Rx
 
       class One < Core
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
         end
 
         def check!(value)
@@ -449,10 +449,10 @@ class Rx
       end
 
       class Rec < Core
-        PARAMS = BASE_PARAMS + ["required", "optional", "rest"]
+        OPTIONAL_PARAMS = ["required", "optional", "rest"]
 
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
 
           @field = {}
 
@@ -520,14 +520,13 @@ class Rx
       end
 
       class Seq < Core
-        PARAMS = BASE_PARAMS + ["tail", "contents", "type"]
+        REQUIRED_PARAMS = BASE_PARAMS + ["contents"]
+        OPTIONAL_PARAMS = ["tail"]
 
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
 
-          unless params.has_key?("contents") && params["contents"].is_a?(Array)
-            raise Rx::Exception.new("missing or invalid contents for #{uri}")
-          end
+          has_schemata(params, "contents")
 
           @content_schemata = params["contents"].map { |s| rx.make_schema(s) }
 
@@ -573,10 +572,10 @@ class Rx
       end
 
       class Str < Core
-        PARAMS = BASE_PARAMS + ["value", "length"]
+        OPTIONAL_PARAMS = ["value", "length"]
 
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
 
           if params.has_key?("length")
             @length_range = Rx::Helper::Range.new(params["length"])
@@ -614,7 +613,7 @@ class Rx
       # Added by dan - 81106
       class Time < Core
         def initialize(params, rx)
-          check_params(PARAMS, params.keys)
+          check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
         end
 
         def check!(value)
