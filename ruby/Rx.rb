@@ -190,7 +190,7 @@ class Rx
       end
 
       class All < Core
-        REQUIRED_PARAMS = BASE_PARAMS + ["of"]
+        REQUIRED_PARAMS += ["of"]
 
         def initialize(params, rx)
           check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
@@ -217,7 +217,7 @@ class Rx
       end
 
       class Any < Core
-        OPTIONAL_PARAMS = ["of"]
+        OPTIONAL_PARAMS += ["of"]
 
         def initialize(params, rx)
           check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
@@ -246,8 +246,8 @@ class Rx
       end
 
       class Arr < Core
-        REQUIRED_PARAMS = BASE_PARAMS + ["contents"]
-        OPTIONAL_PARAMS = ["length"]
+        REQUIRED_PARAMS += ["contents"]
+        OPTIONAL_PARAMS += ["length"]
 
         def initialize(params, rx)
           check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
@@ -338,7 +338,7 @@ class Rx
       end
 
       class Map < Core
-        REQUIRED_PARAMS = BASE_PARAMS + ["values"]
+        REQUIRED_PARAMS += ["values"]
 
         def initialize(params, rx)
           check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
@@ -381,7 +381,7 @@ class Rx
       end
 
       class Num < Core
-        OPTIONAL_PARAMS = ["range", "value"]
+        OPTIONAL_PARAMS += ["range", "value"]
 
         def initialize(params, rx)
           check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
@@ -428,7 +428,7 @@ class Rx
         def check!(value)
           super
 
-          unless value % 1 == 0
+          unless (value % 1).zero?
             error("expected Integer got #{value.inspect}")
           end
 
@@ -449,7 +449,7 @@ class Rx
       end
 
       class Rec < Core
-        OPTIONAL_PARAMS = ["required", "optional", "rest"]
+        OPTIONAL_PARAMS += ["required", "optional", "rest"]
 
         def initialize(params, rx)
           check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
@@ -520,8 +520,8 @@ class Rx
       end
 
       class Seq < Core
-        REQUIRED_PARAMS = BASE_PARAMS + ["contents"]
-        OPTIONAL_PARAMS = ["tail"]
+        REQUIRED_PARAMS += ["contents"]
+        OPTIONAL_PARAMS += ["tail"]
 
         def initialize(params, rx)
           check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
@@ -572,7 +572,7 @@ class Rx
       end
 
       class Str < Core
-        OPTIONAL_PARAMS = ["value", "length"]
+        OPTIONAL_PARAMS += ["value", "length"]
 
         def initialize(params, rx)
           check_params(REQUIRED_PARAMS, OPTIONAL_PARAMS, params.keys)
