@@ -189,6 +189,19 @@ class Rx
         end
       end
 
+      def validate(schema, value)
+        begin
+          return schema.check!(value)
+        rescue ValidationError => e
+          if block_given?
+            yield(e)
+          else
+            e.path = subname + e.path
+            raise e
+          end
+        end
+      end
+
       class All < Core
         REQUIRED_PARAMS += ["of"]
 
@@ -204,12 +217,7 @@ class Rx
 
         def check!(value)
           @alts.each do |alt|
-            begin
-              alt.check!(value)
-            rescue ValidationError => e
-              e.path = subname + e.path
-              raise e
-            end
+            validate(alt, value)
           end
 
           return true
@@ -235,10 +243,7 @@ class Rx
           return true unless @alts
 
           @alts.each do |alt|
-            begin
-              return true if alt.check!(value)
-            rescue ValidationError
-            end
+            return true if validate(alt, value) { }
           end
 
           error("expected one to match")
@@ -274,12 +279,7 @@ class Rx
 
           if @contents_schema
             value.each do |v|
-              begin
-                @contents_schema.check!(v)
-              rescue ValidationError => e
-                e.path = subname + e.path
-                raise e
-              end
+              validate(@contents_schema, v)
             end
           end
 
@@ -355,12 +355,7 @@ class Rx
 
           if @value_schema
             value.each_value do |v|
-              begin
-                @value_schema.check!(v)
-              rescue ValidationError => e
-                e.path = subname + e.path
-                raise e
-              end
+              validate(@value_schema, v)
             end
           end
 
@@ -485,9 +480,7 @@ class Rx
               next
             end
 
-            begin
-              @field[field][:schema].check!(field_value)
-            rescue ValidationError => e
+            validate(@field[field][:schema], field_value) do |e|
               e.path = "#{subname}:'#{field}'"
               raise e
             end
@@ -507,9 +500,7 @@ class Rx
             rest_hash = {}
             rest.each { |field| rest_hash[field] = value[field] }
 
-            begin
-              @rest_schema.check!(rest_hash)
-            rescue ValidationError => e
+            validate(@rest_schema, rest_hash) do |e|
               e.path = subname
               raise e
             end
@@ -544,13 +535,8 @@ class Rx
             error("expected Array to have at least #{@content_schemata.length} elements, had #{value.length}")
           end
 
-          @content_schemata.each_index do |i|
-            begin
-              @content_schemata[i].check!(value[i])
-            rescue ValidationError => e
-              e.path = subname + e.path
-              raise e
-            end
+          @content_schemata.each_with_index do |schemata, i|
+            validate(schemata, value[i])
           end
 
           if value.length > @content_schemata.length
@@ -558,13 +544,7 @@ class Rx
               error("expected tail_schema")
             end
 
-            begin
-              @tail_schema.check!(value[@content_schemata.length,
-                                        value.length - @content_schemata.length])
-            rescue ValidationError => e
-              e.path = subname + e.path
-              raise e
-            end
+            validate(@tail_schema, value[@content_schemata.length, value.length - @content_schemata.length])
           end
 
           return true
