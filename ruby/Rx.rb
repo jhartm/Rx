@@ -216,9 +216,7 @@ class Rx
         end
 
         def check!(value)
-          @alts.each do |alt|
-            validate(alt, value)
-          end
+          @alts.each { |alt| validate(alt, value) }
 
           return true
         end
@@ -271,17 +269,11 @@ class Rx
             error("expected array got #{value.class}")
           end
 
-          if @length_range
-            unless @length_range.check(value.length)
-              error("expected array with #{@length_range} elements, got #{value.length}")
-            end
+          if @length_range && !@length_range.check(value.length)
+            error("expected array with #{@length_range} elements, got #{value.length}")
           end
 
-          if @contents_schema
-            value.each do |v|
-              validate(@contents_schema, v)
-            end
-          end
+          value.each { |v| validate(@contents_schema, v) } if @contents_schema
 
           return true
         end
@@ -353,11 +345,7 @@ class Rx
             error("expected map got #{value.inspect}")
           end
 
-          if @value_schema
-            value.each_value do |v|
-              validate(@value_schema, v)
-            end
-          end
+          value.each_value { |v| validate(@value_schema, v) } if @value_schema
 
           return true
         end
@@ -575,10 +563,8 @@ class Rx
             error("expected String got #{value.inspect}")
           end
 
-          if @length_range
-            unless @length_range.check(value.length)
-              error("expected string with #{@length_range} characters, got #{value.length}")
-            end
+          if @length_range && !@length_range.check(value.length)
+            error("expected string with #{@length_range} characters, got #{value.length}")
           end
 
           if @value && value != @value
