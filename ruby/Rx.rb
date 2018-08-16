@@ -50,7 +50,7 @@ class Rx
     end
 
     unless @prefix.has_key?(match[1])
-      raise Rx::Exception.new("unknown prefix '#{match[1]}' in name 'name'")
+      raise Rx::Exception.new("unknown prefix '#{match[1]}' in name '#{name}'")
     end
 
     return @prefix[match[1]] + match[2]
@@ -66,6 +66,16 @@ class Rx
 
   def make_schema(schema)
     schema = { "type" => schema } if schema.instance_of?(String)
+
+    if schema.instance_of?(Array)
+      sub_schemas = schema.select { |schemata| schemata["uri"] && schemata["schema"] }
+
+      raise Rx::Exception.new("too many schemas detected") unless (schema - sub_schemas).size == 1
+
+      schema = (schema - sub_schemas).first
+
+      sub_schemas.each { |schemata| learn_type(schemata["uri"], schemata["schema"]) }
+    end
 
     unless schema.instance_of?(Hash) && schema["type"]
       raise Rx::Exception.new("invalid type")
